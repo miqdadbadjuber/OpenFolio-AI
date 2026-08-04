@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Terminal, Layout, Globe } from 'lucide-react';
 import Logo from '../components/Logo';
 
 export default function LandingPage() {
@@ -36,7 +37,63 @@ export default function LandingPage() {
             </Link>
           </div>
         </section>
+
+        <section className="py-32 px-6">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-4xl md:text-6xl font-medium tracking-tighter text-white mb-20">
+              Semantic Architecture.
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-8">
+              {/* Feature 1 */}
+              <div className="md:col-span-8 flex flex-col justify-center">
+                <Terminal className="w-10 h-10 text-white mb-8" strokeWidth={1.5} />
+                <h3 className="text-3xl md:text-5xl font-medium text-white tracking-tight mb-6">Modular Engine</h3>
+                <p className="text-xl text-zinc-500 font-light leading-relaxed max-w-xl">
+                  The engine analyzes your experience and constructs an optimal layout. We map your competencies into a strictly typed JSON schema before rendering a single pixel.
+                </p>
+              </div>
+              
+              {/* Empty space for editorial asymmetry */}
+              <div className="hidden md:block md:col-span-4" />
+
+              {/* Feature 2 */}
+              <div className="hidden md:block md:col-span-4" />
+              <div className="md:col-span-8 flex flex-col justify-center mt-16 md:mt-32">
+                <Layout className="w-10 h-10 text-white mb-8" strokeWidth={1.5} />
+                <h3 className="text-3xl md:text-5xl font-medium text-white tracking-tight mb-6">Iterative Compiler</h3>
+                <p className="text-xl text-zinc-500 font-light leading-relaxed max-w-xl">
+                  Adjust your portfolio via our command interface. Restructure content blocks without touching CSS. Everything is compiled instantly.
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="md:col-span-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-10 mt-16 md:mt-32 border-t border-zinc-900 pt-16">
+                <div className="max-w-2xl">
+                  <Globe className="w-10 h-10 text-white mb-8" strokeWidth={1.5} />
+                  <h3 className="text-3xl md:text-5xl font-medium text-white tracking-tight mb-6">Global Namespace</h3>
+                  <p className="text-xl text-zinc-500 font-light leading-relaxed">
+                    Pure, unminified HTML/Tailwind export. Deploy directly to the edge or take your code anywhere. No lock-in, just beautiful syntax.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="border-t border-zinc-900 bg-[#000000] mt-auto">
+        <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-zinc-600 font-mono uppercase tracking-widest">OpenFolio &copy; {new Date().getFullYear()}</span>
+          </div>
+          <div className="flex gap-8 text-xs font-mono uppercase tracking-widest text-zinc-600">
+            <Link to="/app" className="hover:text-white transition-colors">App</Link>
+            <Link to="/login" className="hover:text-white transition-colors">Login</Link>
+            <a href="https://github.com/MiqdadBadjuber/OpenFolio-AI" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
