@@ -22,7 +22,20 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="relative z-10 pt-32 md:pt-40 flex-1">
-        {/* Placeholder for Hero */}
+        <section className="px-6 max-w-7xl mx-auto flex flex-col items-start min-h-[70vh] justify-center pb-20 border-b border-zinc-900">
+          <h1 className="text-6xl md:text-8xl lg:text-[9rem] font-medium tracking-tighter text-white leading-[0.9] mb-8 uppercase">
+            Portfolio,<br />Dikodekan.
+          </h1>
+          <div className="flex flex-col md:flex-row md:items-end gap-8 w-full">
+            <p className="text-lg md:text-2xl text-zinc-400 max-w-2xl font-light leading-relaxed">
+              Compile your resume into a highly-performant, semantic web architecture. Zero manual templating. Built for engineering excellence.
+            </p>
+            <Link to="/app" className="inline-flex items-center justify-center bg-white text-black px-8 py-4 font-bold text-sm uppercase tracking-widest hover:bg-zinc-200 transition-colors gap-3 shrink-0">
+              Generate Portfolio
+              <span className="text-xl leading-none">&rarr;</span>
+            </Link>
+          </div>
+        </section>
       </main>
     </div>
   );
