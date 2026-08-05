@@ -10,10 +10,11 @@ import fs from "fs";
 import os from "os";
 import { PDFParse } from "pdf-parse";
 import rateLimit from "express-rate-limit";
-import { escapeHTML, safeParseJSON, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
+import admin from "firebase-admin";
+import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
-import { chatSchema, generateSchema, editSchema, injectSchema, validate } from "./validation";
+import { chatSchema, generateSchema, editSchema, injectSchema, publishSchema, validate } from "./validation";
 
 dotenv.config();
 initAdmin();
@@ -813,6 +814,37 @@ Format JSON:
       res.status(500).json({ error: e.message });
     }
   });
+
+  // Publish route
+  app.post("/api/portfolio/publish", requireAuth, validate(publishSchema), async (req, res) => {
+    try {
+      const { data, slug } = req.body;
+      const clean = sanitizePortfolioData(data);
+      const html = buildPortfolioHTMLString(clean);
+      const baseSlug = slug || slugify(clean.name || "portfolio");
+      const col = admin.firestore().collection("publicPortfolios");
+      let finalSlug = baseSlug;
+      for (let i = 1; i <= 5; i++) {
+        const snap = await col.doc(finalSlug).get();
+        if (!snap.exists) break;
+        finalSlug = `${baseSlug}-${i}`;
+      }
+      await col.doc(finalSlug).set({ html, name: clean.name || "", updatedAt: new Date().toISOString() });
+      res.json({ url: `/p/${finalSlug}` });
+    } catch (e) {
+      console.error("[Publish]", e);
+      res.status(500).json({ error: "Gagal mempublikasikan portfolio." });
+    }
+  });
+
+  const publishLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: "Terlalu banyak publish. Coba lagi nanti." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use("/api/portfolio/publish", publishLimiter);
 
   const requestId = () => (Math.random().toString(36).slice(2, 10));
   app.use((err: any, req: any, res: any, next: any) => {
