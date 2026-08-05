@@ -15,7 +15,7 @@ export interface UsageDoc {
 type UsageField = Exclude<keyof UsageDoc, "lastResetDate">;
 const FIELD_MAP: Record<QuotaType, UsageField> = { generate: "generates", edit: "edits", chat: "chats" };
 
-const today = () => new Date().toISOString().split("T")[0];
+const today = () => new Date().toISOString().split("T")[0] ?? "";
 const defaultDoc = (): UsageDoc => ({ generates: 0, edits: 0, chats: 0, lastResetDate: today() });
 
 export function resetIfNeeded(doc: UsageDoc): UsageDoc {

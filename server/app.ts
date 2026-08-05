@@ -14,6 +14,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
+import type { z } from "zod";
 import { chatSchema, generateSchema, editSchema, injectSchema, publishSchema, validate } from "./validation";
 
 dotenv.config();
@@ -152,7 +153,7 @@ async function startServer() {
     }
     if (!(await guardQuota(req.user!.uid, "chat", res))) return;
     try {
-      const { messages } = req.body;
+      const { messages } = req.body as z.infer<typeof chatSchema>;
       const history = messages.map((m) => ({
         role: m.role === 'assistant' ? 'model' : (m.role === 'model' ? 'model' : 'user'),
         parts: [{ text: m.content || " " }]
@@ -310,7 +311,7 @@ async function startServer() {
     }
     if (!(await guardQuota(req.user!.uid, "generate", res))) return;
     try {
-      const { messages, selectedTemplate, structuredData } = req.body;
+      const { messages, selectedTemplate, structuredData } = req.body as z.infer<typeof generateSchema>;
       const conversationText = (messages || []).map((m) => m.role + ": " + m.content).join("\n");
       
       // Prevent uploading massive Base64 strings to Gemini context
@@ -546,7 +547,7 @@ ${conversationText}`;
          }
          let delay = 1000 * attempt;
          const match = String(err.message || '').match(/retry in (\d+(?:\.\d+)?)s/i);
-         if (match) {
+         if (match && match[1]) {
            delay = Math.ceil(parseFloat(match[1])) * 1000 + 1500;
          }
          console.log(`[GENERATE PIPELINE] Memulai backoff selama ${delay}ms sebelum attempt ${attempt + 1}...`);
@@ -558,7 +559,7 @@ ${conversationText}`;
       throw new Error("Gagal mendapatkan respon AI setelah beberapa percobaan.");
     }
         
-    const rawJson = safeParseJSON(response.text);
+    const rawJson = safeParseJSON(response.text ?? "");
         dataJson = rawJson.name ? rawJson : (rawJson.data || rawJson.portfolio || rawJson);
         
         // Preserve injected image URLs from structured data (LLM sometimes drops/hallucinates them)
@@ -616,7 +617,7 @@ ${conversationText}`;
     if (!(await guardQuota(req.user!.uid, "edit", res))) return;
     console.log("[EDIT PIPELINE] Request received");
     try {
-      const { currentData, userMessage, history } = req.body;
+      const { currentData, userMessage, history } = req.body as z.infer<typeof editSchema>;
       const conversationText = (history || []).map((m) => m.role + ": " + m.content).join("\n");
       
       const cleanCurrentData = JSON.parse(JSON.stringify(currentData || {}));
@@ -685,7 +686,7 @@ Format JSON:
           }
           let delay = 1000 * attempt;
           const match = String(err.message || '').match(/retry in (\d+(?:\.\d+)?)s/i);
-          if (match) {
+          if (match && match[1]) {
             delay = Math.ceil(parseFloat(match[1])) * 1000 + 1500;
           }
           console.log(`[EDIT PIPELINE] Memulai backoff selama ${delay}ms sebelum attempt ${attempt + 1}...`);
@@ -693,7 +694,7 @@ Format JSON:
         }
       }
       
-      if (!response) {
+      if (!response?.text) {
          throw new Error("Gagal mendapatkan respon dari AI.");
       }
       console.log("[EDIT PIPELINE] Gemini response", response.text.substring(0, 500) + "...");

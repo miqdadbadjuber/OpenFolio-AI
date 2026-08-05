@@ -11,7 +11,7 @@ export interface QuotaSnapshot {
   lastResetDate: string;
 }
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => new Date().toISOString().split('T')[0] ?? '';
 const empty = (): QuotaSnapshot => ({ generates: 0, edits: 0, chats: 0, lastResetDate: today() });
 
 export async function getQuota(): Promise<QuotaSnapshot> {
