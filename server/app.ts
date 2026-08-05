@@ -180,7 +180,11 @@ async function startServer() {
         }
       }
       res.end();
-      await markSpent(req.user!.uid, "chat");
+      try {
+        await markSpent(req.user!.uid, "chat");
+      } catch (e: any) {
+        console.error("Gagal mencatat pemakaian kuota chat:", e);
+      }
     } catch (e: any) {
       const errorStr = e.toString() + (e.message || "");
       const isQuotaExhausted = errorStr.includes("429") || errorStr.toLowerCase().includes("quota") || errorStr.toLowerCase().includes("exhausted");
