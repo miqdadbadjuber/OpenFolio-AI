@@ -816,6 +816,15 @@ Format JSON:
   });
 
   // Publish route
+  const publishLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: "Terlalu banyak publish. Coba lagi nanti." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use("/api/portfolio/publish", publishLimiter);
+
   app.post("/api/portfolio/publish", requireAuth, validate(publishSchema), async (req, res) => {
     try {
       const { data, slug } = req.body;
@@ -836,15 +845,6 @@ Format JSON:
       res.status(500).json({ error: "Gagal mempublikasikan portfolio." });
     }
   });
-
-  const publishLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 5,
-    message: { error: "Terlalu banyak publish. Coba lagi nanti." },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use("/api/portfolio/publish", publishLimiter);
 
   const requestId = () => (Math.random().toString(36).slice(2, 10));
   app.use((err: any, req: any, res: any, next: any) => {
