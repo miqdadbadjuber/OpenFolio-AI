@@ -202,4 +202,4 @@ vulnerabilities.
 
 ## License
 
-[MIT](LICENSE) © 2026 miqdadbadzubair-design
+[MIT](LICENSE) © 2026 miqdadbadjuber
