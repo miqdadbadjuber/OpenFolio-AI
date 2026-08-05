@@ -203,6 +203,17 @@ Snapshot publik hanya berisi field aman (HTML ter-render + `name` + `updatedAt`)
 - Bersihkan scaffolding AI Studio yang tidak relevan (`metadata.json`, `taste-SKILL.md`) — diverifikasi saat implementasi.
 - Hapus/mindahkan `replace*.cjs` dan `test_*.ts` ke `scripts/archive/` (temuan #20, #23).
 
+### 9.1 Publikasi ke repo GitHub yang sudah ada
+
+- User sudah memiliki repo GitHub untuk project ini (saat ini tidak open source, hanya berisi README).
+- Rencana: setelah implementasi & verifikasi selesai, **isi repo tersebut diganti total** dengan code project ini. Repo dipakai ulang, bukan dibuat baru.
+- Publish dilakukan lewat terminal (git add/commit/push) sebagai langkah terakhir sprint.
+- Praktik saat publish:
+  - Pastikan tidak ada secret live: `.env*` (kecuali `.env.example`), `firebase-applet-config.json` (asli, sudah di-git-ignore), dan service account key tidak ter-commit.
+  - Verifikasi `git status` bersih dari file build (`dist/`, `build/`) dan file lokal.
+  - Sebelum push ke repo publik, jalankan secret scan ulang (pattern key/private) sebagai langkah verifikasi.
+  - Repo lama hanya berisi README sehingga tidak ada history code yang perlu dipertahankan; seluruh isi diganti.
+
 ## 10. Kualitas & Cleanup
 
 - **npm audit** (temuan #5): upgrade `react-router-dom` ke versi patched, `firebase-admin` ke latest, jalankan ulang `npm audit --omit=dev`. Residual moderate transitif (google-gax/gaxios dan sejenisnya) didokumentasikan dengan alasan — `firebase-admin` sekarang diperlukan untuk auth.
