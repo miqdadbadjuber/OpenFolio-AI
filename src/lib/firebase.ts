@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInAnonymously } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import autoConfig from "../../firebase-applet-config.json";
 
@@ -24,3 +24,12 @@ const dbId = (finalConfig as any).firestoreDatabaseId;
 export const db = dbId ? getFirestore(app, dbId) : getFirestore(app);
 
 export const googleProvider = new GoogleAuthProvider();
+
+export async function ensureAnonSession(): Promise<void> {
+  if (auth.currentUser) return;
+  try {
+    await signInAnonymously(auth);
+  } catch (e) {
+    console.warn("Anonymous auth gagal:", e);
+  }
+}
