@@ -7,6 +7,7 @@ import { collection, query, where, onSnapshot, updateDoc, deleteDoc, doc, orderB
 import { useLanguage } from '../lib/LanguageContext';
 import { motion, AnimatePresence } from 'motion/react';
 import Logo from './Logo';
+import ToastHost from './ToastHost';
 
 interface HistoryItem {
   id: string;
@@ -642,6 +643,8 @@ export default function AppLayout({
       <div className="flex-1 flex flex-col min-w-0 h-full relative group/layout" data-sidebar={isSidebarOpen ? 'open' : 'closed'}>
         {children}
       </div>
+
+      <ToastHost />
     </div>
   );
 }
