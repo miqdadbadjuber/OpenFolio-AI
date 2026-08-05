@@ -1,6 +1,0 @@
-{
-  "name": "OpenFolio",
-  "description": "AI-powered portfolio generator that turns your CV or chat history into a professional website in minutes.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
