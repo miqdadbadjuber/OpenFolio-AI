@@ -11,7 +11,7 @@ import fs from "fs";
 import os from "os";
 import { PDFParse } from "pdf-parse";
 import rateLimit from "express-rate-limit";
-import { escapeHTML, safeParseJSON, sanitizePortfolioData } from "./server/portfolio-render";
+import { safeParseJSON, sanitizePortfolioData, sanitizeEmailUrl } from "./server/portfolio-render";
 
 dotenv.config();
 
@@ -943,7 +943,7 @@ Format JSON:
                ${navItems.map((it) => `<a href="#${it.id}" class="text-xs font-medium opacity-60 hover:opacity-100 transition-opacity whitespace-nowrap ${style.navText}">${it.label}</a>`).join('')}
             </div>
             <div class="hidden md:flex items-center gap-4">
-              ${data.contact_email ? `<a href="mailto:${data.contact_email}" class="hidden md:block text-xs font-medium opacity-80 hover:opacity-100 transition-opacity whitespace-nowrap ${style.navText}">Connect</a>` : ''}
+              ${data.contact_email ? `<a href="${sanitizeEmailUrl(data.contact_email)}" class="hidden md:block text-xs font-medium opacity-80 hover:opacity-100 transition-opacity whitespace-nowrap ${style.navText}">Connect</a>` : ''}
               <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm animate-pulse"></div>
             </div>
           </div>
@@ -1120,7 +1120,7 @@ Format JSON:
       
       const contactItems: any[] = [];
       if (data.contact_email) {
-          contactItems.push({ label: 'Email', value: data.contact_email, href: `mailto:${data.contact_email}` });
+          contactItems.push({ label: 'Email', value: data.contact_email, href: sanitizeEmailUrl(data.contact_email) });
       }
       
       const knownSocials: Record<string, string> = {

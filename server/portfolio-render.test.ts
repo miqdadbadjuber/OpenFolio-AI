@@ -39,4 +39,12 @@ describe("sanitizePortfolioData", () => {
     const out = sanitizePortfolioData({ name: "<b>x</b>" });
     expect(out.name).toBe("&lt;b&gt;x&lt;/b&gt;");
   });
+  it("menetralkan payload XSS injeksi atribut", () => {
+    const out = sanitizePortfolioData({
+      projects: [{ title: "p", link: 'https://x/" onmouseover="alert(1)' }],
+      hero_image_url: 'https://x/" onerror="alert(1)',
+    });
+    expect(out.projects[0].link).toBe("#");
+    expect(out.hero_image_url).toBeNull();
+  });
 });

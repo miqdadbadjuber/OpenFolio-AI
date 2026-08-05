@@ -83,16 +83,27 @@ export function slugify(input: string): string {
 }
 
 // URL validation: only http/https allowed (blocks data:, javascript:, mailto: directly in hrefs).
-// Values are also HTML-escaped (original server.ts behavior) to prevent attribute-injection XSS:
-// new URL() percent-encodes internally but does NOT throw on quotes/angle brackets, so returning the
-// raw trimmed string would let a value like `https://x/" onmouseover="alert(1)` break out of href="".
+// Rejects characters that could break out of an HTML attribute (`"`, `'`, `<`, `>`, backtick,
+// whitespace) because new URL() percent-encodes them internally but does NOT throw — the raw string
+// is what later gets embedded in href=/src= attributes, so a value like
+// `https://x/" onmouseover="alert(1)` must be rejected outright, not merely re-serialized.
+// Values that pass are also HTML-escaped (defense in depth, e.g. for `&`).
 const sanitizeUrl = (url: string) => {
   if (!url || url === "#") return "#";
+  const trimmed = url.trim();
+  if (/["'<>`\s]/.test(trimmed)) return "#";
   try {
-    const parsed = new URL(url.trim());
-    if (parsed.protocol === "https:" || parsed.protocol === "http:") return escapeHTML(url.trim());
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") return escapeHTML(trimmed);
   } catch {}
   return "#";
+};
+
+// Same allowlist as sanitizeUrl, but returns null (not "#") because it feeds an <img src="">.
+const sanitizeImageUrl = (url: any) => {
+  if (typeof url !== 'string' || !url) return null;
+  const result = sanitizeUrl(url);
+  return result === "#" ? null : result;
 };
 
 // Builds a safe mailto: link from a plain email address.
@@ -113,7 +124,8 @@ export const sanitizePortfolioData = (raw: any) => {
     role: escapeHTML((typeof d.role === 'string' && d.role) ? d.role : ""),
     hero_description: escapeHTML((typeof d.hero_description === 'string' && d.hero_description) ? d.hero_description : ""),
     // Fix: Ensure hero_image_url is preserved from profilePhoto if LLM misses it
-    hero_image_url: d.hero_image_url || d.profilePhoto || null,
+    // Sanitized to http/https only (invalid values -> null) since it feeds an <img src="">.
+    hero_image_url: sanitizeImageUrl(d.hero_image_url || d.profilePhoto),
     color_accent: (typeof d.color_accent === 'string' && d.color_accent.startsWith('#')) ? escapeHTML(d.color_accent) : "#6366F1",
     color_accent_hover: (typeof d.color_accent_hover === 'string' && d.color_accent_hover.startsWith('#')) ? escapeHTML(d.color_accent_hover) : null,
     footer_year: escapeHTML(d.footer_year || new Date().getFullYear().toString()),
