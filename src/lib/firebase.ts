@@ -27,6 +27,10 @@ export const googleProvider = new GoogleAuthProvider();
 
 export async function ensureAnonSession(): Promise<void> {
   if (auth.currentUser) return;
+  await new Promise<void>((resolve) => {
+    const unsub = auth.onAuthStateChanged(() => { unsub(); resolve(); });
+  });
+  if (auth.currentUser) return;
   try {
     await signInAnonymously(auth);
   } catch (e) {

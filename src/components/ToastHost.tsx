@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { setToastListener } from "../lib/notify";
 
 export default function ToastHost() {
   const [msg, setMsg] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     setToastListener((m) => {
       setMsg(m);
-      setTimeout(() => setMsg(null), 4000);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setMsg(null), 4000);
     });
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
   if (!msg) return null;
   return (
