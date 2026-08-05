@@ -10,8 +10,10 @@ import os from "os";
 import { PDFParse } from "pdf-parse";
 import rateLimit from "express-rate-limit";
 import { escapeHTML, safeParseJSON, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
+import { initAdmin, requireAuth } from "./auth";
 
 dotenv.config();
+initAdmin();
 
 const UPLOAD_DIR = path.join(os.tmpdir(), "openfolio_uploads");
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -56,7 +58,8 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT || 3001);
 
-  app.use(cors());
+  const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:3001").split(",").map(s => s.trim());
+  app.use(cors({ origin: corsOrigins }));
   app.use(express.json({ limit: "5mb" }));
   app.use(express.urlencoded({ limit: "5mb", extended: true }));
 
@@ -74,7 +77,7 @@ async function startServer() {
   });
 
   // PDF Parser Route
-  app.post("/api/pdf/parse", upload.single("file"), async (req, res) => {
+  app.post("/api/pdf/parse", requireAuth, upload.single("file"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file provided" });
@@ -94,7 +97,7 @@ async function startServer() {
   });
 
       // Image Upload Route
-  app.post("/api/upload", upload.single("file"), async (req, res, next) => {
+  app.post("/api/upload", requireAuth, upload.single("file"), async (req, res, next) => {
     let tempPath = "";
     try {
       if (!req.file) {
@@ -138,7 +141,7 @@ async function startServer() {
   });
 
   // Gemini Chat Route
-  app.post("/api/gemini/chat", async (req, res) => {
+  app.post("/api/gemini/chat", requireAuth, async (req, res) => {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
@@ -290,7 +293,7 @@ async function startServer() {
       templateName
     };
   };  // JSON Generation route
-  app.post("/api/gemini/generate", async (req, res) => {
+  app.post("/api/gemini/generate", requireAuth, async (req, res) => {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
@@ -593,7 +596,7 @@ ${conversationText}`;
   });
 
   // JSON Revision Editor route
-  app.post("/api/gemini/edit", async (req, res) => {
+  app.post("/api/gemini/edit", requireAuth, async (req, res) => {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
@@ -786,7 +789,7 @@ Format JSON:
   });
 
   // Inject route
-  app.post("/api/portfolio/inject", (req, res) => {
+  app.post("/api/portfolio/inject", requireAuth, (req, res) => {
     try {
       const { data } = req.body;
       const renderedHtml = buildPortfolioHTMLString(data);
