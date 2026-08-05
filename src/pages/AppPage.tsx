@@ -1,7 +1,7 @@
 import React from 'react';
 import AppLayout from '../components/AppLayout';
 import { MessageSquarePlus, FileText, Link as LinkIcon, Blocks, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import Logo from '../components/Logo';
 

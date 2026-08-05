@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '../components/AppLayout';
 import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, Lock, AlertTriangle, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase } from 'lucide-react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import Markdown from 'react-markdown';
 import { TypingText } from '../components/TypingText';
 import { auth, db } from '../lib/firebase';

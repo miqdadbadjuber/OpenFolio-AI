@@ -1,4 +1,4 @@
-import admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 
 export const QUOTA_LIMITS = { generate: 5, edit: 7, chat: 15 } as const;
 export type QuotaType = keyof typeof QUOTA_LIMITS;
@@ -32,7 +32,7 @@ export function evaluateUsage(doc: UsageDoc, type: QuotaType): { allowed: boolea
 }
 
 export async function getUsage(uid: string): Promise<UsageDoc> {
-  const ref = admin.firestore().doc(`usage/${uid}`);
+  const ref = getFirestore().doc(`usage/${uid}`);
   const snap = await ref.get();
   return snap.exists ? resetIfNeeded(snap.data() as UsageDoc) : defaultDoc();
 }
@@ -42,8 +42,8 @@ export async function canSpend(uid: string, type: QuotaType): Promise<boolean> {
 }
 
 export async function markSpent(uid: string, type: QuotaType): Promise<void> {
-  const ref = admin.firestore().doc(`usage/${uid}`);
-  await admin.firestore().runTransaction(async (tx) => {
+  const ref = getFirestore().doc(`usage/${uid}`);
+  await getFirestore().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const { next } = evaluateUsage(snap.exists ? (snap.data() as UsageDoc) : defaultDoc(), type);
     tx.set(ref, next);

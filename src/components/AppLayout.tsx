@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Plus, Search, Settings, X, ChevronUp, Pin, MoreHorizontal, Edit, Trash2, Copy, FolderPlus } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, updateDoc, deleteDoc, doc, orderBy, getDoc, addDoc } from 'firebase/firestore';
