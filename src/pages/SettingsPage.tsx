@@ -42,12 +42,13 @@ export default function SettingsPage() {
       setQuota(await getQuota());
     };
     loadQuota();
+    if (!auth) return;
     const unsub = auth.onAuthStateChanged(loadQuota);
     return unsub;
   }, []);
 
   const handleDeleteAllPortfolios = async () => {
-    if (!auth.currentUser) return;
+    if (!auth?.currentUser || !db) return;
     
     if (confirm('Apakah benar kamu ingin menghapus semua portofolio kamu? Tindakan ini tidak dapat dibatalkan.')) {
       try {
@@ -161,7 +162,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {auth.currentUser && (
+            {auth?.currentUser && (
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="border border-[#8b85a1] bg-[#8b85a11a] rounded-lg p-5 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-[#8b85a1]/5 rounded-full blur-xl pointer-events-none"></div>
@@ -283,7 +284,7 @@ export default function SettingsPage() {
             <button onClick={() => setActiveTab('usage')} className={`w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm transition-colors ${activeTab === 'usage' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}>
               <Gem className="w-4 h-4" /> {t('usage')}
             </button>
-            {auth.currentUser && (
+            {auth?.currentUser && (
               <button onClick={() => setActiveTab('data')} className={`w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm transition-colors ${activeTab === 'data' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium text-[var(--error)]' : 'text-[var(--error)] hover:bg-red-500/10'}`}>
                 <Database className="w-4 h-4" /> {t('data')}
               </button>

@@ -40,6 +40,7 @@ export default function AppLayout({
   const { t, lang } = useLanguage();
 
   useEffect(() => {
+    if (!auth) return;
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
     });
@@ -62,7 +63,7 @@ export default function AppLayout({
       }
     };
 
-    if (user) {
+    if (user && db) {
       // Logic from Firestore for logged in users
       const q = query(
         collection(db, "portfolios"),
@@ -111,7 +112,7 @@ export default function AppLayout({
     setEditingId(null);
     if (!trimmed) return;
 
-    if (user) {
+    if (user && db) {
       try {
         await updateDoc(doc(db, "portfolios", id), { name: trimmed });
       } catch (err: any) {
@@ -140,7 +141,7 @@ export default function AppLayout({
       }
     }
 
-    if (user) {
+    if (user && db) {
       try {
         await updateDoc(doc(db, "portfolios", item.id), { pinned: newPinnedStatus });
       } catch (err: any) {
@@ -164,7 +165,7 @@ export default function AppLayout({
 
     const newName = `${origItem.name} (Salinan)`;
 
-    if (user) {
+    if (user && db) {
       try {
         const docRef = doc(db, "portfolios", id);
         const docSnap = await getDoc(docRef);
@@ -211,7 +212,7 @@ export default function AppLayout({
     const id = deleteId;
     setDeleteId(null);
 
-    if (user) {
+    if (user && db) {
       try {
         await deleteDoc(doc(db, "portfolios", id));
       } catch (err: any) {

@@ -543,7 +543,7 @@ export default function CanvasPage() {
         const loadPortfolio = async (u: User | null) => {
             if (!id) return;
             
-            if (u && !id.startsWith('guest_')) {
+            if (u && db && !id.startsWith('guest_')) {
                 try {
                     const docRef = doc(db, 'portfolios', id);
                     const docSnap = await getDoc(docRef);
@@ -609,6 +609,10 @@ export default function CanvasPage() {
             }
         };
 
+        if (!auth) {
+            setAuthResolved(true);
+            return;
+        }
         const unsub = onAuthStateChanged(auth, (u) => {
             setUser(u);
             setAuthResolved(true);
@@ -750,7 +754,7 @@ export default function CanvasPage() {
                 // Persist updated
                 const activeId = id || projectId || `guest_${Date.now()}`;
                 const portfolioName = nextData.name ? `${nextData.name} Portfolio` : 'Workspace Kreatif ✨';
-                if (user) {
+                if (user && db) {
                     const docRef = doc(db, 'portfolios', activeId);
                     await setDoc(docRef, {
                         userId: user.uid,
@@ -1020,7 +1024,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             const newId = projectId || `guest_${Date.now()}`;
             const portfolioName = generatedData.name ? `${generatedData.name} Portfolio` : `${onboardingName}`;
 
-            if (user) {
+            if (user && db) {
                 const docRef = doc(db, 'portfolios', newId);
                 await setDoc(docRef, {
                     userId: user.uid,
@@ -1150,7 +1154,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             ];
             setWorkspaceMessages(finalMessages);
 
-            if (user) {
+            if (user && db) {
                 const docRef = doc(db, 'portfolios', activeId);
                 await setDoc(docRef, {
                     userId: user.uid,
@@ -1195,7 +1199,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             // Persist error chat history so it survives refresh
             const activeId = id || projectId || `guest_${Date.now()}`;
             try {
-                if (user) {
+                if (user && db) {
                     const docRef = doc(db, 'portfolios', activeId);
                     await updateDoc(docRef, { messages: finalErrMsgs, updatedAt: Date.now() }).catch(() => {});
                 } else {

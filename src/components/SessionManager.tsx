@@ -14,6 +14,10 @@ export default function SessionManager({ children }: { children: React.ReactNode
     // Wait for the anonymous session to be available before rendering.
     // This gates the UI until auth.currentUser (the silent anon session) is ready;
     // it does NOT drive any login UI.
+    if (!auth) {
+      setAuthReady(true);
+      return;
+    }
     const unsub = onAuthStateChanged(auth, () => {
       setAuthReady(true);
     });
@@ -40,7 +44,7 @@ export default function SessionManager({ children }: { children: React.ReactNode
 
         // Draft key must match CanvasPage's getScopedKey('openfolio_draft'):
         // the app is guest-only with anonymous auth, so drafts persist under `user_<uid>_openfolio_draft`.
-        const uid = auth.currentUser?.uid;
+        const uid = auth?.currentUser?.uid;
         const draftExists = uid ? !!localStorage.getItem(`user_${uid}_openfolio_draft`) : false;
 
         // DRAFT RECOVERY PRIORITY

@@ -15,8 +15,8 @@ const today = () => new Date().toISOString().split('T')[0] ?? '';
 const empty = (): QuotaSnapshot => ({ generates: 0, edits: 0, chats: 0, lastResetDate: today() });
 
 export async function getQuota(): Promise<QuotaSnapshot> {
-  const user = auth.currentUser;
-  if (!user) return empty();
+  const user = auth?.currentUser ?? null;
+  if (!user || !db) return empty();
   try {
     const snap = await getDoc(doc(db, 'usage', user.uid));
     if (!snap.exists()) return empty();
