@@ -82,7 +82,7 @@ export function slugify(input: string): string {
   return base || "portfolio";
 }
 ```
-Jangan pindahkan `buildPortfolioHTMLString` dulu (Task 3 memindahkannya bersama server restructure). `sanitizePortfolioData` di sini harus sudah diubah sesuai temuan #9: ganti `sanitizeUrl` agar `data:` TIDAK diizinkan, dan URL validasi per konteks:
+Jangan pindahkan `buildPortfolioHTMLString` dulu (Task 2 memindahkannya bersama server restructure). `sanitizePortfolioData` di sini harus sudah diubah sesuai temuan #9: ganti `sanitizeUrl` agar `data:` TIDAK diizinkan, dan URL validasi per konteks:
 ```ts
 const sanitizeUrl = (url: string) => {
   if (!url || url === "#") return "#";
@@ -262,10 +262,9 @@ export default app;
 
 ```json
 "dev": "tsx server/dev.ts",
-"build": "vite build",
-"start": "node api/index.js"
+"build": "vite build"
 ```
-Hapus script `start` lama bila bertentangan (vercel pakai handler, bukan start). `build` TIDAK lagi membundle server.
+Hapus script `start` lama (Vercel memakai handler `api/index.ts`, bukan `start`). `build` TIDAK lagi membundle server.
 
 - [ ] **Step 7: Verifikasi build & dev**
 
@@ -956,13 +955,18 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
   try { token = await getToken(); }
   catch (e) { throw new ApiError(401, "Sesi tidak tersedia."); }
 
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    ...(options.headers as Record<string, string> || {}),
+  };
+  // FormData harus di-set boundary oleh browser; jangan override Content-Type.
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(path, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
+    headers,
   });
 
   if (!res.ok) {
