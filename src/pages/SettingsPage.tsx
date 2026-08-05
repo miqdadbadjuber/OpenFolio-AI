@@ -1,30 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../components/AppLayout';
-import { User as UserIcon, Globe, Palette, Database, Info, Gem, LogOut, Check, Key } from 'lucide-react';
+import { Globe, Palette, Database, Info, Gem } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../lib/LanguageContext';
 import { useTheme } from '../lib/ThemeContext';
 import { auth, db } from '../lib/firebase';
-import { updateProfile, deleteUser, signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { UsageService, UsageData } from '../lib/UsageService';
 import Logo from '../components/Logo';
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('usage');
   const navigate = useNavigate();
   const { t, lang, setLang } = useLanguage();
   const { theme, setTheme } = useTheme();
 
-  // Profile Form States
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState('');
-  
   // Data Privacy Confirmation States
   const [deletePortfolioConfirm, setDeletePortfolioConfirm] = useState('');
-  const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('');
 
   // Usage states
   const [usageData, setUsageData] = useState<UsageData>({
@@ -51,13 +43,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        setName(user.displayName || '');
-        setEmail(user.email || '');
-      } else {
-        setName('');
-        setEmail('');
-      }
       const data = await UsageService.getUsage(user?.uid || null);
       setUsageData(data);
     });
@@ -74,21 +59,6 @@ export default function SettingsPage() {
       window.removeEventListener('usage_updated', handleUsageUpdated);
     };
   }, []);
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!auth.currentUser) return;
-    setIsUpdatingProfile(true);
-    setProfileSuccess('');
-    try {
-      await updateProfile(auth.currentUser, { displayName: name });
-      setProfileSuccess('Profil berhasil diperbarui!');
-    } catch (err) {
-      console.error(err);
-      alert('Gagal update profil');
-    }
-    setIsUpdatingProfile(false);
-  };
 
   const handleDeleteAllPortfolios = async () => {
     if (!auth.currentUser) return;
@@ -110,67 +80,10 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!auth.currentUser) {
-       alert('Kamu sedang dalam mode guest.');
-       return;
-    }
-    
-    if (confirm('Apakah benar kamu ingin menghapus akun kamu? Semua data akan terhapus permanen!')) {
-      try {
-        await deleteUser(auth.currentUser);
-        alert('Akun berhasil dihapus.');
-        navigate('/login');
-      } catch (err) {
-        console.error(err);
-        alert('Gagal menghapus akun. Silakan login ulang dan coba lagi.'); // firebase requires recent login
-      }
-    }
-  };
-
   const tokenProgress = Math.min((usageData.tokens / 50000) * 100, 100);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'profile':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-medium mb-4">{t('profile')}</h3>
-            {!auth.currentUser ? (
-               <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-white p-5 rounded-[var(--radius-sm)] text-sm space-y-4">
-                 <p>Anda sedang menggunakan Mode Tamu. Login untuk menyimpan portofolio, sinkronisasi data, dan mengakses seluruh fitur akun.</p>
-                 <button onClick={() => navigate('/login')} className="bg-[#4F46E5] hover:bg-[#6366F1] text-[#FFFFFF] transition-colors rounded-[var(--radius-md)] font-medium text-xs px-5 py-2.5">
-                   Login / Daftar
-                 </button>
-               </div>
-            ) : (
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <div>
-                  <label className="block text-sm text-[var(--text-secondary)] mb-1">Nama</label>
-                  <input 
-                    type="text" 
-                    className="input" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    placeholder="Masukkan nama"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-[var(--text-secondary)] mb-1">Email</label>
-                  <input type="email" className="input" value={email} readOnly disabled />
-                </div>
-                
-                <div className="flex items-center gap-3">
-                   <button type="submit" disabled={isUpdatingProfile} className="btn-primary text-sm whitespace-nowrap">
-                     {isUpdatingProfile ? 'Menyimpan...' : 'Simpan Profil'}
-                   </button>
-                   {profileSuccess && <span className="text-sm text-[var(--success)] flex items-center gap-1"><Check className="w-4 h-4"/> {profileSuccess}</span>}
-                </div>
-              </form>
-            )}
-          </div>
-        );
       case 'language':
         return (
           <div className="space-y-6">
@@ -391,17 +304,6 @@ export default function SettingsPage() {
                 </div>
               </div>
               
-              <div className="p-6 border border-red-500/10 bg-red-500/5 rounded-lg space-y-4">
-                <div>
-                  <h4 className="font-semibold text-sm text-[var(--text-primary)] mb-1">{lang === 'id' ? 'Hapus Akun Permanen' : 'Terminate Account'}</h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{lang === 'id' ? 'Seluruh kredensial akun, sinkronisasi cloud, dan data profil akan dihapus sepenuhnya.' : 'Disconnect credentials and completely terminate your user account profile.'}</p>
-                </div>
-                <div className="space-y-3">
-                  <p className="text-[11px] text-[var(--text-secondary)]">Ketik <strong className="text-[var(--text-primary)]">HAPUS AKUN</strong> untuk mengonfirmasi.</p>
-                  <input type="text" className="input text-xs w-full max-w-xs" placeholder="Ketik HAPUS AKUN" value={deleteAccountConfirm} onChange={e => setDeleteAccountConfirm(e.target.value)} />
-                  <button onClick={handleDeleteAccount} disabled={deleteAccountConfirm !== 'HAPUS AKUN'} className="btn-danger block text-xs px-5 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed">Hapus Akun</button>
-                </div>
-              </div>
             </div>
           </div>
         );
@@ -455,9 +357,6 @@ export default function SettingsPage() {
           </button>
           
           <div className="w-full md:w-64 flex-shrink-0 space-y-1 md:mt-0">
-            <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm transition-colors ${activeTab === 'profile' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}>
-              <UserIcon className="w-4 h-4" /> {t('profile')}
-            </button>
             <button onClick={() => setActiveTab('language')} className={`w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm transition-colors ${activeTab === 'language' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}>
               <Globe className="w-4 h-4" /> {t('language')}
             </button>
@@ -475,16 +374,6 @@ export default function SettingsPage() {
             <button onClick={() => setActiveTab('about')} className={`w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm transition-colors ${activeTab === 'about' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}>
               <Info className="w-4 h-4" /> {t('about')}
             </button>
-            <div className="my-4 border-t border-[var(--border-subtle)]"></div>
-            {auth.currentUser ? (
-              <button onClick={() => { signOut(auth); navigate('/login'); }} className="w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors">
-                <LogOut className="w-4 h-4" /> {t('logout')}
-              </button>
-            ) : (
-              <button onClick={() => navigate('/login')} className="w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors">
-                <Key className="w-4 h-4" /> Login / Daftar
-              </button>
-            )}
           </div>
           
           <div className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl p-6 md:p-8">

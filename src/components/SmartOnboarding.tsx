@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { db, auth } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
 import Logo from './Logo';
 import { CheckCircle2, Workflow, Monitor, Download, LayoutGrid, Layers, FileText, MessageSquare } from 'lucide-react';
 
@@ -12,83 +9,41 @@ export default function SmartOnboarding({ onComplete }: { onComplete: () => void
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: () => void;
+    // Guest-only onboarding state (openfolio_onboarding_guest).
+    const localKey = 'openfolio_onboarding_guest';
 
-    const checkStatus = async (user: any) => {
-      // 0. Define correct local key based on auth status
-      const localKey = user ? `openfolio_onboarding_${user.uid}` : 'openfolio_onboarding_guest';
+    // 0.1 Migrate old global key if it exists
+    const oldGlobalStatus = localStorage.getItem('openfolio_workspaceTutorialCompleted');
+    if (oldGlobalStatus === 'true') {
+      localStorage.setItem(localKey, 'true');
+      localStorage.removeItem('openfolio_workspaceTutorialCompleted');
+    }
 
-      // 0.1 Migrate old global key if it exists
-      const oldGlobalStatus = localStorage.getItem('openfolio_workspaceTutorialCompleted');
-      if (oldGlobalStatus === 'true') {
-        localStorage.setItem(localKey, 'true');
-        localStorage.removeItem('openfolio_workspaceTutorialCompleted');
-      }
-
-      // 1. Fast local check first
-      const localStatus = localStorage.getItem(localKey);
-      if (localStatus === 'true') {
-        onComplete();
-        setIsChecking(false);
-        return;
-      }
-
-      // 2. Firebase check if logged in and local check failed
-      if (user) {
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          const snap = await getDoc(userRef);
-          if (snap.exists() && snap.data().workspaceTutorialCompleted === true) {
-             // Save to local storage for future fast checks
-             localStorage.setItem(localKey, 'true');
-             onComplete();
-          } else {
-             setVisible(true);
-          }
-        } catch (e) {
-          console.warn("Onboarding check error:", e);
-          setVisible(true); 
-        }
-      } else {
-        setVisible(true);
-      }
-      setIsChecking(false);
-    };
-
-    unsubscribe = onAuthStateChanged(auth, checkStatus);
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    // 1. Fast local check
+    const localStatus = localStorage.getItem(localKey);
+    if (localStatus === 'true') {
+      onComplete();
+    } else {
+      setVisible(true);
+    }
+    setIsChecking(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const completeOnboardingData = async () => {
-    const u = auth.currentUser;
-    // Save to local storage for both guest and authenticated users
-    const localKey = u ? `openfolio_onboarding_${u.uid}` : 'openfolio_onboarding_guest';
-    localStorage.setItem(localKey, 'true');
-
-    if (u) {
-       try {
-         const userRef = doc(db, 'users', u.uid);
-         await setDoc(userRef, { workspaceTutorialCompleted: true }, { merge: true });
-       } catch (e) {
-         console.warn("Failed to set onboarding status", e);
-       }
-    }
+  const completeOnboardingData = () => {
+    localStorage.setItem('openfolio_onboarding_guest', 'true');
   };
 
-  const handleFinish = async () => {
+  const handleFinish = () => {
     setVisible(false);
     setTimeout(onComplete, 300); // Wait for exit animation
-    await completeOnboardingData();
+    completeOnboardingData();
   };
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
     setVisible(false);
     setTimeout(onComplete, 300); // Wait for exit animation
-    await completeOnboardingData();
+    completeOnboardingData();
   };
 
   if (isChecking) return null;

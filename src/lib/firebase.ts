@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInAnonymously } from "firebase/auth";
+import { getAuth, signInAnonymously } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import autoConfig from "../../firebase-applet-config.json";
 
@@ -22,8 +22,6 @@ export const auth = getAuth(app);
 // Use specific database ID if provided in config
 const dbId = (finalConfig as any).firestoreDatabaseId;
 export const db = dbId ? getFirestore(app, dbId) : getFirestore(app);
-
-export const googleProvider = new GoogleAuthProvider();
 
 export async function ensureAnonSession(): Promise<void> {
   if (auth.currentUser) return;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Plus, Search, Settings, X, ChevronUp, LogOut, Key, Pin, MoreHorizontal, Edit, Trash2, Copy, FolderPlus } from 'lucide-react';
+import { Menu, Plus, Search, Settings, X, ChevronUp, Pin, MoreHorizontal, Edit, Trash2, Copy, FolderPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, updateDoc, deleteDoc, doc, orderBy, getDoc, addDoc } from 'firebase/firestore';
 import { useLanguage } from '../lib/LanguageContext';
@@ -98,13 +98,6 @@ export default function AppLayout({
       };
     }
   }, [user]);
-
-  const handleLogout = async () => {
-    localStorage.removeItem('openfolio_last_route');
-    await signOut(auth);
-    setShowDropdown(false);
-    navigate('/');
-  };
 
   const startEditing = (e: React.MouseEvent, item: HistoryItem) => {
     e.stopPropagation();
@@ -573,25 +566,9 @@ export default function AppLayout({
           <div className={`mt-auto pt-4 border-t border-white/[0.03] relative ${!isSidebarOpen ? 'flex justify-center w-full' : 'w-full'}`}>
             {showDropdown && isSidebarOpen && (
               <div className="absolute bottom-full mb-2 left-0 w-full bg-[#0A0A0B] backdrop-blur-3xl border border-white/[0.08] rounded-lg p-1 shadow-2xl shadow-black/50 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                {user ? (
-                  <>
-                    <button onClick={() => { setShowDropdown(false); navigate('/settings'); }} className="flex items-center gap-2.5 w-full p-2.5 text-xs text-zinc-400 hover:text-white hover:bg-white/[0.04] rounded-lg text-left transition-all cursor-pointer">
-                      <Settings className="w-4 h-4 text-zinc-500" /> {t('settings')}
-                    </button>
-                    <button onClick={handleLogout} className="flex items-center gap-2.5 w-full p-2.5 text-xs text-red-500 hover:bg-red-500/10 hover:text-red-400 rounded-lg text-left transition-all cursor-pointer">
-                      <LogOut className="w-4 h-4 opacity-70" /> {t('logout')}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => navigate('/login')} className="flex items-center gap-2.5 w-full p-2.5 text-xs text-zinc-400 hover:text-white hover:bg-white/[0.04] rounded-lg text-left transition-all cursor-pointer">
-                      <Key className="w-4 h-4 text-zinc-500" /> Login / Daftar
-                    </button>
-                    <button onClick={() => { setShowDropdown(false); navigate('/settings'); }} className="flex items-center gap-2.5 w-full p-2.5 text-xs text-zinc-400 hover:text-white hover:bg-white/[0.04] rounded-lg text-left transition-all cursor-pointer">
-                      <Settings className="w-4 h-4 text-zinc-500" /> {t('settings')}
-                    </button>
-                  </>
-                )}
+                <button onClick={() => { setShowDropdown(false); navigate('/settings'); }} className="flex items-center gap-2.5 w-full p-2.5 text-xs text-zinc-400 hover:text-white hover:bg-white/[0.04] rounded-lg text-left transition-all cursor-pointer">
+                  <Settings className="w-4 h-4 text-zinc-500" /> {t('settings')}
+                </button>
               </div>
             )}
             
@@ -603,35 +580,17 @@ export default function AppLayout({
               }}
               className={`flex items-center group cursor-pointer hover:bg-white/[0.02] p-2 transition-all ${isSidebarOpen ? 'justify-between rounded-lg w-full' : 'justify-center rounded-xl w-10 h-10 p-0 flex-shrink-0'}`}
             >
-              {user ? (
-                isSidebarOpen ? (
-                  <div className="flex items-center gap-2.5 overflow-hidden">
-                    <div className="w-8 h-8 rounded-full bg-zinc-900 text-zinc-300 border border-zinc-800 flex flex-shrink-0 items-center justify-center font-semibold text-sm select-none">
-                      {user.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div className="flex text-left flex-col max-w-[150px]">
-                      <span className="text-xs font-medium truncate text-white">{user.displayName || 'Pengguna'}</span>
-                      <span className="text-[11px] text-zinc-500 truncate">{user.email}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-zinc-900 text-zinc-300 border border-zinc-800 flex flex-shrink-0 items-center justify-center font-semibold text-sm select-none">
-                    {user.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )
-              ) : (
-                isSidebarOpen ? (
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800 flex items-center justify-center">
-                      <span className="font-bold text-[10px] uppercase">G</span>
-                    </div>
-                    <span className="text-xs font-medium text-zinc-300">Mode Tamu</span>
-                  </div>
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800 flex items-center justify-center flex-shrink-0">
+              {isSidebarOpen ? (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800 flex items-center justify-center">
                     <span className="font-bold text-[10px] uppercase">G</span>
                   </div>
-                )
+                  <span className="text-xs font-medium text-zinc-300">Mode Tamu</span>
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800 flex items-center justify-center flex-shrink-0">
+                  <span className="font-bold text-[10px] uppercase">G</span>
+                </div>
               )}
               {isSidebarOpen && <ChevronUp className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors flex-shrink-0" />}
             </div>

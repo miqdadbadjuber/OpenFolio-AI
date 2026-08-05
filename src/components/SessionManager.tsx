@@ -11,7 +11,10 @@ export default function SessionManager({ children }: { children: React.ReactNode
   const location = useLocation();
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    // Wait for the anonymous session to be available before rendering.
+    // This gates the UI until auth.currentUser (the silent anon session) is ready;
+    // it does NOT drive any login UI.
+    const unsub = onAuthStateChanged(auth, () => {
       setAuthReady(true);
     });
     return unsub;
@@ -20,7 +23,7 @@ export default function SessionManager({ children }: { children: React.ReactNode
   // 1. ACTIVE ROUTE PERSISTENCE
   useEffect(() => {
     // We only track the user's explicit position inside the app.
-    // If they go to / or /login manually, we do not override their intent.
+    // If they go to the landing page manually, we do not override their intent.
     if (location.pathname.startsWith('/app') || location.pathname.startsWith('/settings')) {
       localStorage.setItem('openfolio_last_route', location.pathname);
     }
@@ -34,11 +37,11 @@ export default function SessionManager({ children }: { children: React.ReactNode
     const runRecovery = async () => {
       if (location.pathname === '/' || location.pathname === '') {
         const lastRoute = localStorage.getItem('openfolio_last_route');
-        
-        // Find if a draft exists for the current user
-        const userPrefix = auth.currentUser ? `user_${auth.currentUser.uid}` : `guest`;
-        const draftExists = localStorage.getItem(`${userPrefix}_openfolio_draft`);
-        
+
+        // Guest-only draft key (openfolio_session_guest storage prefix).
+        // The app is guest-only, so there is no user-vs-guest branching anymore.
+        const draftExists = localStorage.getItem('openfolio_session_guest_openfolio_draft');
+
         // DRAFT RECOVERY PRIORITY
         if (lastRoute && lastRoute !== '/' && lastRoute !== '') {
            navigate(lastRoute, { replace: true });
@@ -48,7 +51,7 @@ export default function SessionManager({ children }: { children: React.ReactNode
       }
       setRouteRestoreReady(true);
     };
-    
+
     if (!routeRestoreReady) {
       runRecovery();
     }
