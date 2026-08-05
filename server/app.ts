@@ -12,6 +12,7 @@ import rateLimit from "express-rate-limit";
 import { escapeHTML, safeParseJSON, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
+import { chatSchema, generateSchema, editSchema, injectSchema, validate } from "./validation";
 
 dotenv.config();
 initAdmin();
@@ -92,16 +93,16 @@ async function startServer() {
       if (!req.file) {
         return res.status(400).json({ error: "No file provided" });
       }
-      const dataBuffer = fs.readFileSync(req.file.path);
+      const dataBuffer = await fs.promises.readFile(req.file.path);
       const parser = new PDFParse({ data: dataBuffer });
       const data = await parser.getText();
       res.json({ text: data.text });
     } catch (e: any) {
-      console.error(e);
-      res.status(500).json({ error: e.message });
+      console.error("PDF Parse Error:", e);
+      res.status(500).json({ error: "Gagal memproses file" });
     } finally {
       if (req.file?.path) {
-        try { fs.unlinkSync(req.file.path); } catch(err){}
+        try { await fs.promises.unlink(req.file.path); } catch(err){}
       }
     }
   });
@@ -118,14 +119,14 @@ async function startServer() {
 
       if (!process.env.CLOUDINARY_API_KEY) {
          console.log(`[Upload API] Falling back to Data URI for ${req.file.originalname}`);
-         const fileBuffer = fs.readFileSync(req.file.path);
+         const fileBuffer = await fs.promises.readFile(req.file.path);
          const b64 = fileBuffer.toString("base64");
          finalUrl = "data:" + req.file.mimetype + ";base64," + b64;
          console.log(`[Upload API] Generated Base64 URI of length ${finalUrl.length}`);
       } else {
          console.log(`[Upload API] Uploading to Cloudinary for ${req.file.originalname}...`);
          tempPath = req.file.path + (path.extname(req.file.originalname) || ".jpg");
-         fs.renameSync(req.file.path, tempPath);
+         await fs.promises.rename(req.file.path, tempPath);
          const result = await cloudinary.uploader.upload(tempPath, {
            folder: "openfolio",
            timeout: 50000
@@ -136,29 +137,29 @@ async function startServer() {
       
       res.json({ url: finalUrl });
     } catch (e: any) {
-      console.log(`[Upload API] Upload rejected:`, e.message);
-      const errorMsg = e.message || "Gagal mengunggah file";
+      console.error(`[Upload API] Upload rejected:`, e);
+      const errorMsg = e.message || "";
       const status = e.http_code || (errorMsg.toLowerCase().includes("invalid") ? 400 : 500);
-      res.status(status).json({ error: errorMsg });
+      res.status(status).json({ error: "Gagal memproses file" });
     } finally {
       if (req.file?.path) {
-         try { fs.unlinkSync(req.file.path); } catch (err) {}
+         try { await fs.promises.unlink(req.file.path); } catch (err) {}
       }
       if (tempPath !== "") {
-         try { fs.unlinkSync(tempPath); } catch(err) {}
+         try { await fs.promises.unlink(tempPath); } catch(err) {}
       }
     }
   });
 
   // Gemini Chat Route
-  app.post("/api/gemini/chat", requireAuth, async (req, res) => {
+  app.post("/api/gemini/chat", requireAuth, validate(chatSchema), async (req, res) => {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
     if (!(await guardQuota(req.user!.uid, "chat", res))) return;
     try {
       const { messages } = req.body;
-      const history = messages.map((m: any) => ({
+      const history = messages.map((m) => ({
         role: m.role === 'assistant' ? 'model' : (m.role === 'model' ? 'model' : 'user'),
         parts: [{ text: m.content || " " }]
       }));
@@ -309,14 +310,14 @@ async function startServer() {
       templateName
     };
   };  // JSON Generation route
-  app.post("/api/gemini/generate", requireAuth, async (req, res) => {
+  app.post("/api/gemini/generate", requireAuth, validate(generateSchema), async (req, res) => {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
     if (!(await guardQuota(req.user!.uid, "generate", res))) return;
     try {
       const { messages, selectedTemplate, structuredData } = req.body;
-      const conversationText = (messages || []).map((m:any) => m.role + ": " + m.content).join("\n");
+      const conversationText = (messages || []).map((m) => m.role + ": " + m.content).join("\n");
       
       // Prevent uploading massive Base64 strings to Gemini context
       const cleanStructuredData = JSON.parse(JSON.stringify(structuredData || {}));
@@ -614,7 +615,7 @@ ${conversationText}`;
   });
 
   // JSON Revision Editor route
-  app.post("/api/gemini/edit", requireAuth, async (req, res) => {
+  app.post("/api/gemini/edit", requireAuth, validate(editSchema), async (req, res) => {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
@@ -622,7 +623,7 @@ ${conversationText}`;
     console.log("[EDIT PIPELINE] Request received");
     try {
       const { currentData, userMessage, history } = req.body;
-      const conversationText = (history || []).map((m:any) => m.role + ": " + m.content).join("\n");
+      const conversationText = (history || []).map((m) => m.role + ": " + m.content).join("\n");
       
       const cleanCurrentData = JSON.parse(JSON.stringify(currentData || {}));
       if (cleanCurrentData.hero_image_url && cleanCurrentData.hero_image_url.startsWith("data:")) {
@@ -809,7 +810,7 @@ Format JSON:
   });
 
   // Inject route
-  app.post("/api/portfolio/inject", requireAuth, (req, res) => {
+  app.post("/api/portfolio/inject", requireAuth, validate(injectSchema), (req, res) => {
     try {
       const { data } = req.body;
       const renderedHtml = buildPortfolioHTMLString(data);
@@ -820,9 +821,15 @@ Format JSON:
     }
   });
 
+  const requestId = () => (Math.random().toString(36).slice(2, 10));
   app.use((err: any, req: any, res: any, next: any) => {
-    console.error("Global Error Handler", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
+    const id = requestId();
+    console.error(`[${id}]`, err);
+    const isMulter = err instanceof multer.MulterError;
+    const isValidation = err && err.type === "entity.parse.failed";
+    const status = isMulter ? 400 : (isValidation ? 400 : 500);
+    const message = status === 400 ? "Request tidak valid." : "Terjadi kesalahan internal. Coba lagi.";
+    if (!res.headersSent) res.status(status).json({ error: message, requestId: id });
   });
 
   return app;
