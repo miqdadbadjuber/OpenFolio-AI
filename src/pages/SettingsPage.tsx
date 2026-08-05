@@ -6,7 +6,7 @@ import { useLanguage } from '../lib/LanguageContext';
 import { useTheme } from '../lib/ThemeContext';
 import { auth, db } from '../lib/firebase';
 import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
-import { UsageService, UsageData } from '../lib/UsageService';
+import { getQuota, remaining, QuotaLimits, QuotaSnapshot } from '../lib/UsageService';
 import Logo from '../components/Logo';
 
 export default function SettingsPage() {
@@ -18,12 +18,8 @@ export default function SettingsPage() {
   // Data Privacy Confirmation States
   const [deletePortfolioConfirm, setDeletePortfolioConfirm] = useState('');
 
-  // Usage states
-  const [usageData, setUsageData] = useState<UsageData>({
-    tokens: 0,
-    sessions: 0,
-    edits: 0
-  });
+  // Quota states
+  const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, chats: 0, lastResetDate: '' });
   
   const [resetTimer, setResetTimer] = useState('');
 
@@ -42,22 +38,12 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(async (user) => {
-      const data = await UsageService.getUsage(user?.uid || null);
-      setUsageData(data);
-    });
-
-    const handleUsageUpdated = async () => {
-      const data = await UsageService.getUsage(auth.currentUser?.uid || null);
-      setUsageData(data);
+    const loadQuota = async () => {
+      setQuota(await getQuota());
     };
-
-    window.addEventListener('usage_updated', handleUsageUpdated);
-
-    return () => {
-      unsub();
-      window.removeEventListener('usage_updated', handleUsageUpdated);
-    };
+    loadQuota();
+    const unsub = auth.onAuthStateChanged(loadQuota);
+    return unsub;
   }, []);
 
   const handleDeleteAllPortfolios = async () => {
@@ -79,8 +65,6 @@ export default function SettingsPage() {
       }
     }
   };
-
-  const tokenProgress = Math.min((usageData.tokens / 50000) * 100, 100);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -151,96 +135,29 @@ export default function SettingsPage() {
             <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg p-5 space-y-5">
               <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                 <h4 className="font-semibold text-xs text-[var(--text-primary)] uppercase tracking-wider">
-                  {!auth.currentUser ? (lang === 'id' ? 'Statistik Mode Tamu' : 'Guest Mode Statistics') : (lang === 'id' ? 'Statistik Penggunaan Hari Ini' : 'Today\'s Statistics')}
+                  {lang === 'id' ? 'Statistik Penggunaan Hari Ini' : "Today's Statistics"}
                 </h4>
                 <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-850 px-2.5 py-0.5 rounded-full">
-                  {!auth.currentUser ? (
-                    <>
-                      <span className="w-1.5 h-1.5 bg-[#8b85a1] rounded-full animate-pulse"></span>
-                      <span className="text-[10px] text-[#8b85a1] font-medium font-sans tracking-wide">
-                        {lang === 'id' ? `Reset berikutnya dalam: ${resetTimer}` : `Next reset in: ${resetTimer}`}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-1.5 h-1.5 bg-[#8b85a1] rounded-full animate-pulse"></span>
-                      <span className="text-[10px] text-[#8b85a1] font-medium font-sans tracking-wide">
-                        {lang === 'id' ? `Reset berikutnya dalam: ${resetTimer}` : `Next reset in: ${resetTimer}`}
-                      </span>
-                    </>
-                  )}
+                  <span className="w-1.5 h-1.5 bg-[#8b85a1] rounded-full animate-pulse"></span>
+                  <span className="text-[10px] text-[#8b85a1] font-medium font-sans tracking-wide">
+                    {lang === 'id' ? `Reset berikutnya dalam: ${resetTimer}` : `Next reset in: ${resetTimer}`}
+                  </span>
                 </div>
               </div>
-              
-              <div className="space-y-4">
-                {(() => {
-                  const dailyLimit = !auth.currentUser ? 20000 : 50000;
-                  const tokensUsed = usageData.tokens;
-                  const tokensLeft = Math.max(0, dailyLimit - tokensUsed);
-                  const percentage = Math.min((tokensUsed / dailyLimit) * 100, 100);
-                  
-                  return (
-                    <div className="space-y-5">
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
-                          <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Token Terpakai</p>
-                          <p className="text-lg font-bold text-white">{tokensUsed.toLocaleString()}</p>
-                        </div>
-                        <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
-                          <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Batas Harian</p>
-                          <p className="text-lg font-bold text-white">{dailyLimit.toLocaleString()}</p>
-                        </div>
-                        <div className="p-3 bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.15)] rounded-lg">
-                          <p className="text-[10px] text-[#22C55E] uppercase font-semibold mb-1 tracking-wider">Sisa Token</p>
-                          <p className="text-lg font-bold text-[#22C55E]">{tokensLeft.toLocaleString()}</p>
-                        </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-medium text-[var(--text-secondary)] items-center">
-                          <span>{lang === 'id' ? 'Kapasitas Token Terpakai' : 'Token Capacity Used'}</span>
-                          <span className="text-white bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold tracking-widest">{percentage.toFixed(0)}%</span>
-                        </div>
-                        <div className="w-full bg-[rgba(255,255,255,0.08)] h-2.5 rounded-full overflow-hidden border border-[var(--border-subtle)]">
-                          <div className="bg-[#22C55E] h-full transition-all duration-1000 rounded-full relative" style={{ width: `${percentage}%` }}>
-                            <div className="absolute inset-0 bg-white/20 w-full animate-pulse"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {!auth.currentUser ? (
-                  <div className="bg-[#8b85a11a]/50 border border-[#8b85a1]/10 text-[var(--text-primary)] p-5 rounded-lg space-y-4 mt-4">
-                     <p className="text-sm font-medium">Tingkatkan pengalaman Anda dengan mendaftar secara gratis untuk mendapatkan fitur eksklusif:</p>
-                     <ul className="text-xs space-y-2 text-[var(--text-secondary)] list-disc pl-4">
-                       <li>Simpan Portofolio tanpa batas</li>
-                       <li>Sinkronisasi Akun antar perangkat</li>
-                       <li>Riwayat Portofolio lengkap</li>
-                     </ul>
-                     <button onClick={() => navigate('/login')} className="btn-primary w-full text-xs py-2.5 mt-2">Login Sekarang</button>
-                  </div>
-                ) : (
-                  usageData.sessions === 0 && usageData.edits === 0 && usageData.tokens === 0 ? (
-                    <div className="pt-2">
-                      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-6 rounded-lg text-center">
-                        <p className="text-sm font-medium text-[var(--text-secondary)]">Belum ada aktivitas hari ini</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-4 rounded-lg text-center">
-                        <p className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">{lang === 'id' ? 'Sesi AI Hari Ini' : 'AI Sessions'}</p>
-                        <p className="text-lg font-semibold text-white tracking-tight">{usageData.sessions} <span className="text-xs font-normal text-[var(--text-secondary)]">{lang === 'id' ? 'sesi' : 'sessions'}</span></p>
-                      </div>
-                      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-4 rounded-lg text-center">
-                        <p className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1">{lang === 'id' ? 'Revisi AI Hari Ini' : 'AI Revisions'}</p>
-                        <p className="text-lg font-semibold text-white tracking-tight">{usageData.edits} <span className="text-xs font-normal text-[var(--text-secondary)]">kali</span></p>
-                      </div>
-                    </div>
-                  )
-                )}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Generate</p>
+                  <p className="text-lg font-bold text-white">{remaining(quota, 'generate')}<span className="text-xs font-normal text-[var(--text-secondary)]">/{QuotaLimits.generate}</span></p>
+                </div>
+                <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Edit</p>
+                  <p className="text-lg font-bold text-white">{remaining(quota, 'edit')}<span className="text-xs font-normal text-[var(--text-secondary)]">/{QuotaLimits.edit}</span></p>
+                </div>
+                <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Chat</p>
+                  <p className="text-lg font-bold text-white">{remaining(quota, 'chat')}<span className="text-xs font-normal text-[var(--text-secondary)]">/{QuotaLimits.chat}</span></p>
+                </div>
               </div>
             </div>
 

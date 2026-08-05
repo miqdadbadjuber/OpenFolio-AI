@@ -9,7 +9,8 @@ import { auth, db } from '../lib/firebase';
 import Logo from '../components/Logo';
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { UsageService } from '../lib/UsageService';
+import { getQuota, remaining, QuotaSnapshot } from '../lib/UsageService';
+import { showToast } from '../lib/notify';
 import { useLanguage } from '../lib/LanguageContext';
 
 import { PortfolioData } from '../types';
@@ -267,6 +268,7 @@ export default function CanvasPage() {
     const [htmlContent, setHtmlContent] = useState<string>('');
     const [workspaceMessages, setWorkspaceMessages] = useState<Array<{ role: string; content: string }>>([]);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, chats: 0, lastResetDate: '' });
 
     // -- NEW MODULAR STATES --
     interface SkillItem {
@@ -603,6 +605,7 @@ export default function CanvasPage() {
             setUser(u);
             setAuthResolved(true);
             loadPortfolio(u);
+            getQuota().then(setQuota);
         });
         return unsub;
     }, [id]);
@@ -907,19 +910,8 @@ export default function CanvasPage() {
             safe_mode: safeMode
         };
 
-        const payloadSizeEstimate = JSON.stringify(structuredData).length;
-        let estimatedTokens = 2300;
-        if (payloadSizeEstimate < 1000) {
-            estimatedTokens = 850;
-        } else if (payloadSizeEstimate < 2500) {
-            estimatedTokens = 2100;
-        } else {
-            estimatedTokens = 4500;
-        }
-
-        const canProceed = await UsageService.canGenerate(user?.uid || null);
-        if (!canProceed) {
-            alert("Anda telah mencapai batas penggunaan harian. Silakan mencoba kembali setelah reset harian.");
+        if (remaining(quota, "generate") === 0) {
+            showToast("Limit harian tercapai.");
             setIsGenerating(false);
             setGuidedStage('contact');
             return;
@@ -1015,7 +1007,7 @@ export default function CanvasPage() {
                     pinned: false,
                     updatedAt: Date.now()
                 });
-                await UsageService.trackUsage(user.uid, 'generate', estimatedTokens);
+                setQuota(await getQuota()); // server sudah menghitung; refresh tampilan kuota
             } else {
                 const stored = localStorage.getItem('openfolio_guest_history');
                 let list = [];
@@ -1040,7 +1032,7 @@ export default function CanvasPage() {
                          try { localStorage.setItem('openfolio_guest_history', JSON.stringify(list)); } catch(ee) {}
                     }
                 }
-                await UsageService.trackUsage(null, 'generate', estimatedTokens);
+                setQuota(await getQuota()); // server sudah menghitung; refresh tampilan kuota
                 window.dispatchEvent(new Event('openfolio_history_change'));
             }
 
