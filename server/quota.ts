@@ -1,22 +1,21 @@
 import { getFirestore } from "firebase-admin/firestore";
 
-export const QUOTA_LIMITS = { generate: 5, edit: 7, chat: 15 } as const;
+export const QUOTA_LIMITS = { generate: 5, edit: 7 } as const;
 export type QuotaType = keyof typeof QUOTA_LIMITS;
 
 export interface UsageDoc {
   generates: number;
   edits: number;
-  chats: number;
   lastResetDate: string;
 }
 
 // Reconciles singular QuotaType keys with plural UsageDoc field names
 // (defect fix: QUOTA_LIMITS keys are singular, UsageDoc fields are plural).
 type UsageField = Exclude<keyof UsageDoc, "lastResetDate">;
-const FIELD_MAP: Record<QuotaType, UsageField> = { generate: "generates", edit: "edits", chat: "chats" };
+const FIELD_MAP: Record<QuotaType, UsageField> = { generate: "generates", edit: "edits" };
 
 const today = () => new Date().toISOString().split("T")[0] ?? "";
-const defaultDoc = (): UsageDoc => ({ generates: 0, edits: 0, chats: 0, lastResetDate: today() });
+const defaultDoc = (): UsageDoc => ({ generates: 0, edits: 0, lastResetDate: today() });
 
 export function resetIfNeeded(doc: UsageDoc): UsageDoc {
   if (doc.lastResetDate !== today()) return defaultDoc();

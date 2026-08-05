@@ -19,7 +19,7 @@ export default function SettingsPage() {
   const [deletePortfolioConfirm, setDeletePortfolioConfirm] = useState('');
 
   // Quota states
-  const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, chats: 0, lastResetDate: '' });
+  const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, lastResetDate: '' });
   
   const [resetTimer, setResetTimer] = useState('');
 
@@ -146,7 +146,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
                   <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Generate</p>
                   <p className="text-lg font-bold text-white">{remaining(quota, 'generate')}<span className="text-xs font-normal text-[var(--text-secondary)]">/{QuotaLimits.generate}</span></p>
@@ -154,10 +154,6 @@ export default function SettingsPage() {
                 <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
                   <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Edit</p>
                   <p className="text-lg font-bold text-white">{remaining(quota, 'edit')}<span className="text-xs font-normal text-[var(--text-secondary)]">/{QuotaLimits.edit}</span></p>
-                </div>
-                <div className="p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg">
-                  <p className="text-[10px] text-[var(--text-secondary)] uppercase font-semibold mb-1 tracking-wider">Chat</p>
-                  <p className="text-lg font-bold text-white">{remaining(quota, 'chat')}<span className="text-xs font-normal text-[var(--text-secondary)]">/{QuotaLimits.chat}</span></p>
                 </div>
               </div>
             </div>

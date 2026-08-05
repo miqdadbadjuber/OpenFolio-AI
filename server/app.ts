@@ -3,6 +3,7 @@ import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
+import { randomUUID } from "node:crypto";
 import { fileTypeFromBuffer } from "file-type";
 import { v2 as cloudinary } from "cloudinary";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -15,7 +16,7 @@ import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfol
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
 import type { z } from "zod";
-import { chatSchema, generateSchema, editSchema, injectSchema, publishSchema, validate } from "./validation";
+import { generateSchema, editSchema, injectSchema, publishSchema, validate } from "./validation";
 
 dotenv.config();
 initAdmin();
@@ -90,7 +91,16 @@ async function startServer() {
   app.use("/api/pdf/parse", fileLimiter);
 
   async function guardQuota(uid: string, type: QuotaType, res: any): Promise<boolean> {
-    const ok = await canSpend(uid, type);
+    let ok: boolean;
+    try {
+      ok = await canSpend(uid, type);
+    } catch (e) {
+      // Firestore read failed — don't hang the request (Express 4 doesn't catch async
+      // rejections thrown before the route's own try). Fail closed with 503 instead.
+      console.error("[Quota] Gagal membaca kuota:", e);
+      res.status(503).json({ error: "Layanan quota sedang tidak tersedia." });
+      return false;
+    }
     if (!ok) {
       res.status(429).json({ error: `Kamu sudah mencapai limit harian (${type}). Coba lagi besok.` });
       return false;
@@ -124,83 +134,31 @@ async function startServer() {
 
   app.post("/api/upload", requireAuth, uploadImage, async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "File tidak ada." });
+    let tempPath: string | undefined;
     try {
       const ok = await assertMagicBytes(req.file.path, ALLOWED_IMAGE_MAGIC);
       if (!ok) {
-        await fs.promises.unlink(req.file.path).catch(() => {});
         return res.status(400).json({ error: "Tipe file tidak didukung. Hanya JPG, PNG, atau WebP." });
       }
       if (!process.env.CLOUDINARY_API_KEY) {
-        await fs.promises.unlink(req.file.path).catch(() => {});
         return res.status(503).json({ error: "Upload belum dikonfigurasi." });
       }
-      const tempPath = req.file.path + (path.extname(req.file.originalname) || ".jpg");
+      tempPath = req.file.path + (path.extname(req.file.originalname) || ".jpg");
       await fs.promises.rename(req.file.path, tempPath);
       const result = await cloudinary.uploader.upload(tempPath, { folder: "openfolio", timeout: 50000 });
-      await fs.promises.unlink(tempPath).catch(() => {});
       res.json({ url: result.secure_url });
     } catch (e: any) {
       console.error("[Upload]", e);
-      if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
       res.status(500).json({ error: "Gagal mengunggah file." });
+    } finally {
+      // Clean up BOTH paths: req.file.path no longer exists after rename(), so the
+      // renamed tempPath must be unlinked too (else it accumulates in /tmp).
+      if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
+      if (tempPath) await fs.promises.unlink(tempPath).catch(() => {});
     }
   });
 
-  // Gemini Chat Route
-  app.post("/api/gemini/chat", requireAuth, validate(chatSchema), async (req, res) => {
-    if (!ai) {
-      return res.status(503).json({ error: "AI belum dikonfigurasi" });
-    }
-    if (!(await guardQuota(req.user!.uid, "chat", res))) return;
-    try {
-      const { messages } = req.body as z.infer<typeof chatSchema>;
-      const history = messages.map((m) => ({
-        role: m.role === 'assistant' ? 'model' : (m.role === 'model' ? 'model' : 'user'),
-        parts: [{ text: m.content || " " }]
-      }));
-      
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader('Transfer-Encoding', 'chunked');
-      
-      const responseStream = await ai.models.generateContentStream({
-        model: "gemini-2.5-flash",
-        contents: history,
-        config: {
-          systemInstruction: "Kamu adalah OpenFolio Identity Engine. Tugasmu adalah mengumpulkan data identitas profesional user untuk membangun portfolio premium. Tanya pertanyaan SATU PER SATU dalam urutan: 1. Nama lengkap? 2. Peran profesional & spesialisasi? 3. Headline/manifesto singkat tentang karyamu? 4. Area skill utama? 5. Riwayat karier? 6. Proyek unggulan? 7. Kontak & Lokasi? Mood bicaramu harus tenang, elegan, dan profesional. Hindari gaya bicara robotik atau cinematic berlebihan. Jika semua data terkumpul atau user minta revisi, katakan: 'Sebentar ya, aku sedang menyusun narasi identitasmu... ✨'",
-        }
-      });
-
-      for await (const chunk of responseStream) {
-        if (chunk.text) {
-          res.write(chunk.text);
-        }
-      }
-      res.end();
-      try {
-        await markSpent(req.user!.uid, "chat");
-      } catch (e: any) {
-        console.error("Gagal mencatat pemakaian kuota chat:", e);
-      }
-    } catch (e: any) {
-      const errorStr = e.toString() + (e.message || "");
-      const isQuotaExhausted = errorStr.includes("429") || errorStr.toLowerCase().includes("quota") || errorStr.toLowerCase().includes("exhausted");
-      
-      if (isQuotaExhausted) {
-         console.warn("Gemini Chat Quota Exhausted.");
-      } else {
-         console.error("Gemini Chat Error:", e.message);
-      }
-      
-      let userMessage = isQuotaExhausted ? "AI Edit sementara tidak tersedia karena batas penggunaan Gemini telah tercapai." : "Maaf, terjadi gangguan pada sistem AI.";
-      let statusCode = isQuotaExhausted ? 429 : 500;
-      
-      if (!res.headersSent) {
-        res.status(statusCode).json({ error: userMessage });
-      } else {
-        res.end(`\n\nError: ${userMessage}`);
-      }
-    }
-  });  // Helper to construct robust local fallback in case LLM is busy or fails
+  // Helper to construct robust local fallback in case LLM is busy or fails
   const buildLocalFallbackData = (structured: any, template: string) => {
     const templateName = template || "obsidian";
     const name = structured?.fullName || "";
@@ -595,7 +553,13 @@ ${conversationText}`;
         dataJson = buildLocalFallbackData(structuredData, selectedTemplate || "folio");
       }
 
-      await markSpent(req.user!.uid, "generate");
+      try {
+        await markSpent(req.user!.uid, "generate");
+      } catch (e: any) {
+        // Log-and-continue: the AI work already succeeded; a quota-recording hiccup
+        // must not turn the successful response into a 500 (fail-open for recording).
+        console.error("Gagal mencatat pemakaian kuota generate:", e);
+      }
       res.status(200).json(dataJson);
     } catch (e: any) {
       if (e.message === "QUOTA_EXHAUSTED") {
@@ -605,7 +569,7 @@ ${conversationText}`;
       console.error("Gemini Generate Error:", e.message);
       const errMessage = String(e.message || '').toLowerCase();
       const isOverloaded = e.status === 503 || errMessage.includes("503") || errMessage.includes("unavailable");
-      res.status(isOverloaded ? 503 : 500).json({ error: isOverloaded ? "Model sedang sibuk. Silakan coba klik tombol Build lagi dalam beberapa detik." : (e.message || "Gagal merancang identitas digital.") });
+      res.status(isOverloaded ? 503 : 500).json({ error: isOverloaded ? "Model sedang sibuk. Silakan coba klik tombol Build lagi dalam beberapa detik." : "Gagal merancang identitas digital." });
     }
   });
 
@@ -790,7 +754,13 @@ Format JSON:
       }
       
       console.log("[EDIT PIPELINE] Parsed successfully");
-      await markSpent(req.user!.uid, "edit");
+      try {
+        await markSpent(req.user!.uid, "edit");
+      } catch (e: any) {
+        // Log-and-continue: the AI work already succeeded; a quota-recording hiccup
+        // must not turn the successful response into a 500 (fail-open for recording).
+        console.error("Gagal mencatat pemakaian kuota edit:", e);
+      }
       res.json(parsed);
     } catch (e: any) {
       if (e.message === "QUOTA_EXHAUSTED") {
@@ -811,8 +781,9 @@ Format JSON:
       const renderedHtml = buildPortfolioHTMLString(data);
       res.send(renderedHtml);
     } catch (e: any) {
+      // Log the detail server-side; never leak internal error messages to clients.
       console.error(e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Gagal memproses request." });
     }
   });
 
@@ -847,7 +818,7 @@ Format JSON:
     }
   });
 
-  const requestId = () => (Math.random().toString(36).slice(2, 10));
+  const requestId = () => randomUUID();
   app.use((err: any, req: any, res: any, next: any) => {
     const id = requestId();
     console.error(`[${id}]`, err);

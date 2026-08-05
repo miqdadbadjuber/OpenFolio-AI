@@ -19,7 +19,7 @@ Cloudinary for image uploads.
 - **Live preview** — rendered in a sandboxed iframe.
 - **Publish** — get a public URL (`/p/{slug}`) hosted from Firestore.
 - **Uploads** — images (JPG/PNG/WebP, ≤ 2 MB) via Cloudinary and PDF parsing for résumés.
-- **Daily quota** — 5 generates, 7 edits, 15 chat messages per user per day.
+- **Daily quota** — 5 generates and 7 edits per user per day.
 
 ## Architecture
 
@@ -170,7 +170,6 @@ Per user, enforced server-side in Firestore and reset daily (UTC):
 |---|---|
 | Generate | 5 |
 | Edit | 7 |
-| Chat | 15 |
 
 When a limit is reached the API returns `429` and the UI shows a notification. The remaining
 quota is displayed in the app's Settings page.
@@ -185,7 +184,6 @@ header. The ID token comes from the client's Firebase Anonymous Auth session.
 | GET | `/api/health` | — | Liveness probe → `{ "status": "ok" }`. |
 | POST | `/api/pdf/parse` | ✅ | Multipart `file` (PDF, ≤ 2 MB). Returns `{ "text": string }`. |
 | POST | `/api/upload` | ✅ | Multipart `file` (JPG/PNG/WebP, ≤ 2 MB). Uploads to Cloudinary. Returns `{ "url": string }`. |
-| POST | `/api/gemini/chat` | ✅ | Streaming chat. Body: `{ messages: { role, content }[] }`. Returns text/plain chunked stream. |
 | POST | `/api/gemini/generate` | ✅ | Generate portfolio JSON. Body: `{ messages?, selectedTemplate?, structuredData? }`. Returns the portfolio object. |
 | POST | `/api/gemini/edit` | ✅ | Revise portfolio JSON. Body: `{ currentData, userMessage, history? }`. Returns `{ explanation, data }`. |
 | POST | `/api/portfolio/inject` | ✅ | Render portfolio HTML (used by the live preview). Body: `{ data }`. Returns HTML string. |

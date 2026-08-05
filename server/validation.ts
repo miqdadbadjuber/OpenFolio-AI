@@ -3,9 +3,6 @@ import type { Request, Response, NextFunction } from "express";
 
 const messageItem = z.object({ role: z.string().max(20), content: z.string().max(4000) });
 
-export const chatSchema = z.object({
-  messages: z.array(messageItem).min(1).max(60),
-});
 export const generateSchema = z.object({
   messages: z.array(messageItem).max(60).optional(),
   selectedTemplate: z.enum(["obsidian","kinetic","aurora","folio","studio","nexus","pulse","manuscript"]).optional(),

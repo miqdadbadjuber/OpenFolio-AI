@@ -89,7 +89,9 @@ export function slugify(input: string): string {
 // `https://x/" onmouseover="alert(1)` must be rejected outright, not merely re-serialized.
 // Values that pass are also HTML-escaped (defense in depth, e.g. for `&`).
 const sanitizeUrl = (url: string) => {
-  if (!url || url === "#") return "#";
+  // Guard for non-string values first: publish/inject accept `z.record(z.any())`, so
+  // social/project fields can be numbers/objects — calling `.trim()` would throw a 500.
+  if (typeof url !== "string" || !url || url === "#") return "#";
   const trimmed = url.trim();
   if (/["'<>`\s]/.test(trimmed)) return "#";
   try {
