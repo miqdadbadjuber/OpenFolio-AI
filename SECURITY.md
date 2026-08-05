@@ -29,7 +29,7 @@ always deploy from the latest `main`.
 - **Guest-only access.** No accounts or login UI. Clients authenticate silently with
   Firebase **Anonymous Auth**; server endpoints verify the ID token (`verifyIdToken`)
   before doing any work.
-- **Server-enforced daily quotas** (`generate` 5, `edit` 7, `chat` 15) are enforced in
+- **Server-enforced daily quotas** (`generate` 5, `edit` 7) are enforced in
   Firestore, not on the client, so quota cannot be bypassed by editing local state.
 - **Rate limiting** per IP on AI, upload, and publish endpoints (`express-rate-limit`).
 - **Uploads** are capped at 2 MB, validated by magic bytes (JPG/PNG/WebP), and stored via

@@ -13,9 +13,10 @@ describe("firebase module load safety", () => {
     const mod = await import("./firebase");
     expect(mod).toBeDefined();
     expect(typeof mod.hasFirebaseConfig).toBe("boolean");
-    // Invariant: Firestore is only constructed when a projectId is present. In the
-    // both-absent case (no config file AND no VITE_FIREBASE_*) db must be null and the
-    // module must NOT have thrown (getFirestore would have thrown synchronously).
+    // Invariant: Firestore is only constructed when BOTH an apiKey AND a projectId are
+    // present (hasFirebaseConfig). In the absent case (no config file AND no
+    // VITE_FIREBASE_*) db must be null and the module must NOT have thrown
+    // (getFirestore would have thrown synchronously).
     if (mod.hasFirebaseConfig) {
       expect(mod.db).not.toBeNull();
     } else {

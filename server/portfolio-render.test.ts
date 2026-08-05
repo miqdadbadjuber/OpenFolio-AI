@@ -47,4 +47,13 @@ describe("sanitizePortfolioData", () => {
     expect(out.projects[0].link).toBe("#");
     expect(out.hero_image_url).toBeNull();
   });
+  it("tidak melempar pada nilai link non-string (z.record(z.any()))", () => {
+    const out = sanitizePortfolioData({
+      projects: [{ title: "p", link: 123 as any, image_url: { bad: true } as any }],
+      socials: { github: ["x"] as any },
+    });
+    expect(out.projects[0].link).toBe("#");
+    expect(out.projects[0].image_url).toBe("#");
+    expect(out.socials.github).toBe("#");
+  });
 });

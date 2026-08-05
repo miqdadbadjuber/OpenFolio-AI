@@ -11,7 +11,11 @@ async function getToken(): Promise<string> {
   return user.getIdToken();
 }
 
-export async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+// Single primitive for every authenticated call: attaches the Firebase ID token as
+// a `Bearer` header and returns the raw Response (so HTML/streaming call sites can
+// still read `.text()`). FormData must be set by the browser — never override
+// Content-Type for it.
+export async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
   let token: string;
   try { token = await getToken(); }
   catch (e) { throw new ApiError(401, "Sesi tidak tersedia."); }
@@ -25,10 +29,14 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(path, {
+  return fetch(path, {
     ...options,
     headers,
   });
+}
+
+export async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await authFetch(path, options);
 
   if (!res.ok) {
     let message = "Terjadi kesalahan.";

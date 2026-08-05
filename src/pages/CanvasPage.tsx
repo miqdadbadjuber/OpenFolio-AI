@@ -11,7 +11,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { getQuota, remaining, QuotaSnapshot } from '../lib/UsageService';
 import { showToast } from '../lib/notify';
-import { apiFetch } from '../lib/api';
+import { apiFetch, authFetch } from '../lib/api';
 import { useLanguage } from '../lib/LanguageContext';
 
 import { PortfolioData } from '../types';
@@ -95,15 +95,17 @@ const getProgressiveDataForPct = (structuredData: any, pct: number) => {
     return data;
 };
 
-// Helper function to auto-retry on 200 HTML responses (loading screen) when the AI studio server restarts.
-const fetchDenganRetry = async (url: string, options: RequestInit, retries = 3): Promise<Response> => {
-    const res = await fetch(url, options);
+// Helper function to auto-retry on 200 HTML responses (loading screen) when the AI studio
+// server restarts. Goes through `authFetch` (src/lib/api.ts) so the Firebase ID token is
+// always attached — protected endpoints return 401 otherwise.
+const fetchAuthWithRetry = async (url: string, options: RequestInit, retries = 3): Promise<Response> => {
+    const res = await authFetch(url, options);
     const contentType = res.headers.get("content-type");
     if (res.status === 502 || res.status === 503 || res.status === 504 || (res.status === 200 && contentType && contentType.includes("text/html"))) {
         if (retries > 0) {
             console.log(`Server response indicates temporary routing state (${res.status}). Retrying... (${retries} left)`);
             await new Promise(r => setTimeout(r, 3000));
-            return fetchDenganRetry(url, options, retries - 1);
+            return fetchAuthWithRetry(url, options, retries - 1);
         }
     }
     return res;
@@ -267,7 +269,7 @@ export default function CanvasPage() {
     const [htmlContent, setHtmlContent] = useState<string>('');
     const [workspaceMessages, setWorkspaceMessages] = useState<Array<{ role: string; content: string }>>([]);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, chats: 0, lastResetDate: '' });
+    const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, lastResetDate: '' });
 
     // -- NEW MODULAR STATES --
     interface SkillItem {
@@ -378,7 +380,7 @@ export default function CanvasPage() {
             const formData = new FormData();
             formData.append('file', compressedFile);
             console.log(`[Frontend Upload] Sending request to /api/upload...`);
-            const res = await fetch('/api/upload', {
+            const res = await authFetch('/api/upload', {
                 method: 'POST',
                 body: formData,
                 signal: controller.signal
@@ -521,7 +523,7 @@ export default function CanvasPage() {
             setPortfolioData(mockData);
             setHtmlContent(html);
             
-            const activeId = `guest_dev_${Date.now()}`;
+            const activeId = `dev_${Date.now()}`;
             setProjectId(activeId);
             setGuidedStage('done');
             setShowCanvas(true);
@@ -542,8 +544,12 @@ export default function CanvasPage() {
     useEffect(() => {
         const loadPortfolio = async (u: User | null) => {
             if (!id) return;
-            
-            if (u && db && !id.startsWith('guest_')) {
+
+            // All sessions are anonymous (Firebase Anonymous Auth gives every guest a uid),
+            // so save AND load both use Firestore when a session exists; localStorage is only
+            // a fallback when there is no user at all. Legacy `guest_` ids simply don't exist
+            // in Firestore and are ignored consistently.
+            if (u && db) {
                 try {
                     const docRef = doc(db, 'portfolios', id);
                     const docSnap = await getDoc(docRef);
@@ -738,7 +744,7 @@ export default function CanvasPage() {
         setPortfolioData(nextData);
 
         try {
-            const responseInject = await fetchDenganRetry('/api/portfolio/inject', {
+            const responseInject = await fetchAuthWithRetry('/api/portfolio/inject', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -752,7 +758,7 @@ export default function CanvasPage() {
                 setHtmlContent(updatedHtml);
                 
                 // Persist updated
-                const activeId = id || projectId || `guest_${Date.now()}`;
+                const activeId = id || projectId || String(Date.now());
                 const portfolioName = nextData.name ? `${nextData.name} Portfolio` : 'Workspace Kreatif ✨';
                 if (user && db) {
                     const docRef = doc(db, 'portfolios', activeId);
@@ -861,7 +867,7 @@ export default function CanvasPage() {
 
     const callInjectAPI = async (data: any) => {
         try {
-            const responseInject = await fetchDenganRetry('/api/portfolio/inject', {
+            const responseInject = await fetchAuthWithRetry('/api/portfolio/inject', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ data })
@@ -970,7 +976,7 @@ export default function CanvasPage() {
         try {
             // Step 1: AI Generation (Heavy Lift)
             console.log("[OpenFolio] Requesting AI Identity Synthesis...");
-            const responseGen = await fetchDenganRetry('/api/gemini/generate', {
+            const responseGen = await fetchAuthWithRetry('/api/gemini/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages: workspaceMessages, structuredData })
@@ -1021,7 +1027,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             setPortfolioData(generatedData);
             setHtmlContent(injectedHtml);
 
-            const newId = projectId || `guest_${Date.now()}`;
+            const newId = projectId || String(Date.now());
             const portfolioName = generatedData.name ? `${generatedData.name} Portfolio` : `${onboardingName}`;
 
             if (user && db) {
@@ -1090,7 +1096,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
         try {
             // Step 1: Hit Gemini edit API to update the JSON content
-            const res = await fetchDenganRetry('/api/gemini/edit', {
+            const res = await fetchAuthWithRetry('/api/gemini/edit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1126,7 +1132,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             console.log("[EDIT PIPELINE] Portfolio updated");
 
             // Step 2: Inject modified JSON back into template
-            const responseInject = await fetchDenganRetry('/api/portfolio/inject', {
+            const responseInject = await fetchAuthWithRetry('/api/portfolio/inject', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1144,7 +1150,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             setHtmlContent(updatedHtml);
 
             // Step 3: Persist modified JSON and HTML
-            const activeId = id || projectId || `guest_${Date.now()}`;
+            const activeId = id || projectId || String(Date.now());
             const portfolioName = updatedData.name ? `${updatedData.name} Portfolio` : 'Workspace Kreatif ✨';
 
             // Append explanation speech from AI assistant
@@ -1197,7 +1203,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             setWorkspaceMessages(finalErrMsgs);
             
             // Persist error chat history so it survives refresh
-            const activeId = id || projectId || `guest_${Date.now()}`;
+            const activeId = id || projectId || String(Date.now());
             try {
                 if (user && db) {
                     const docRef = doc(db, 'portfolios', activeId);

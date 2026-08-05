@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { evaluateUsage, resetIfNeeded, QUOTA_LIMITS, type UsageDoc } from "./quota";
 
-const base: UsageDoc = { generates: 0, edits: 0, chats: 0, lastResetDate: new Date().toISOString().split("T")[0] ?? "" };
+const base: UsageDoc = { generates: 0, edits: 0, lastResetDate: new Date().toISOString().split("T")[0] ?? "" };
 
 describe("evaluateUsage", () => {
   it("mengizinkan saat belum penuh", () => {
@@ -17,15 +17,11 @@ describe("evaluateUsage", () => {
     const doc = { ...base, edits: QUOTA_LIMITS.edit };
     expect(evaluateUsage(doc, "edit").allowed).toBe(false);
   });
-  it("menolak saat limit chat tercapai", () => {
-    const doc = { ...base, chats: QUOTA_LIMITS.chat };
-    expect(evaluateUsage(doc, "chat").allowed).toBe(false);
-  });
 });
 
 describe("resetIfNeeded", () => {
   it("mereset counter bila tanggal berbeda", () => {
-    const old = { generates: 5, edits: 7, chats: 15, lastResetDate: "2000-01-01" };
+    const old = { generates: 5, edits: 7, lastResetDate: "2000-01-01" };
     const r = resetIfNeeded(old);
     expect(r.generates).toBe(0);
   });

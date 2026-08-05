@@ -28,7 +28,9 @@ const finalConfig: AppConfig | undefined = customConfig.apiKey ? customConfig : 
 // "not configured" notice instead of the app, and NONE of the Firebase instances are
 // constructed: both `getAuth` and `getFirestore` throw synchronously when the app has no
 // own `apiKey` / `projectId` (verified in @firebase/app, @firebase/auth, @firebase/firestore).
-export const hasFirebaseConfig = Boolean(finalConfig?.projectId);
+// Require BOTH — a config with a projectId but no apiKey passes the old guard and
+// `getAuth(app)` throws `auth/invalid-api-key` at import.
+export const hasFirebaseConfig = Boolean(finalConfig?.apiKey && finalConfig?.projectId);
 
 if (!finalConfig) {
   // Degrade sensibly: warn instead of throwing at module import. The app entry shows a
@@ -41,9 +43,9 @@ if (!finalConfig) {
   );
 } else if (!hasFirebaseConfig) {
   console.warn(
-    "[firebase] Firebase config found but it is missing a projectId. Check " +
-      "`firebase-applet-config.json` / the VITE_FIREBASE_PROJECT_ID variable. Firestore " +
-      "features are disabled until a projectId is provided."
+    "[firebase] Firebase config found but it is missing an apiKey or projectId. Check " +
+      "`firebase-applet-config.json` / the VITE_FIREBASE_* variables. Firestore features " +
+      "are disabled until both an apiKey and a projectId are provided."
   );
 }
 
