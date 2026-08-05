@@ -14,13 +14,13 @@ export default function PublicPortfolioPage() {
     const fetchPortfolio = async () => {
       if (!id) return;
       try {
-        const docRef = doc(db, 'portfolios', id);
+        const docRef = doc(db, 'publicPortfolios', id);
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.isPublished && data.htmlContent) {
-            setHtmlContent(data.htmlContent);
+          if (data.html) {
+            setHtmlContent(data.html);
           } else {
             setError('Portfolio ini belum dipublikasikan atau data tidak ditemukan.');
           }
@@ -67,8 +67,9 @@ export default function PublicPortfolioPage() {
 
   return (
     <div className="h-screen w-full bg-white overflow-hidden">
-      <iframe 
-        srcDoc={htmlContent} 
+      <iframe
+        srcDoc={htmlContent}
+        sandbox="allow-scripts"
         className="w-full h-full border-none"
         title="Public Portfolio"
       />
