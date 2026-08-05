@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Layers, Home } from 'lucide-react';
 import { useLanguage } from '../lib/LanguageContext';
 

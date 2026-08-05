@@ -10,7 +10,7 @@ import fs from "fs";
 import os from "os";
 import { PDFParse } from "pdf-parse";
 import rateLimit from "express-rate-limit";
-import admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
@@ -831,7 +831,7 @@ Format JSON:
       const clean = sanitizePortfolioData(data);
       const html = buildPortfolioHTMLString(clean);
       const baseSlug = slug || slugify(clean.name || "portfolio");
-      const col = admin.firestore().collection("publicPortfolios");
+      const col = getFirestore().collection("publicPortfolios");
       let finalSlug = baseSlug;
       for (let i = 1; i <= 5; i++) {
         const snap = await col.doc(finalSlug).get();

@@ -1,21 +1,21 @@
-import admin from "firebase-admin";
+import { cert, initializeApp } from "firebase-admin";
+import { getAuth } from "firebase-admin/auth";
 import type { Request, Response, NextFunction } from "express";
 
 let initialized = false;
-export function initAdmin(): typeof admin {
-  if (initialized) return admin;
+export function initAdmin(): void {
+  if (initialized) return;
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
   if (!projectId || !clientEmail || !privateKey) {
     console.warn("Firebase Admin belum dikonfigurasi — endpoint ber-auth akan menolak semua request.");
   } else {
-    admin.initializeApp({
-      credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+    initializeApp({
+      credential: cert({ projectId, clientEmail, privateKey }),
     });
     initialized = true;
   }
-  return admin;
 }
 
 declare global {
@@ -26,7 +26,7 @@ declare global {
 
 type TokenVerifier = (token: string) => Promise<{ uid: string }>;
 const defaultVerifier: TokenVerifier = async (token: string) => {
-  const decoded = await admin.auth().verifyIdToken(token);
+  const decoded = await getAuth().verifyIdToken(token);
   return { uid: decoded.uid };
 };
 
