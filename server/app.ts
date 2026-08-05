@@ -19,7 +19,7 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 }
 
 // Standardize API Key usage
-const API_KEY = process.env.GEMINI_API_KEY_NEW || process.env.GEMINI_API_KEY;
+const API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY_NEW;
 if (!API_KEY) {
   console.warn("GEMINI_API_KEY tidak ditemukan — fitur AI nonaktif sampai diisi.");
 }
