@@ -45,7 +45,7 @@ Pendekatan dipilih: **Approach B — Anonymous Auth + server-enforced quota + ra
       { "key": "X-Content-Type-Options", "value": "nosniff" },
       { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
       { "key": "X-Frame-Options", "value": "DENY" },
-      { "key": "frame-ancestors", "value": "'none'" }
+      { "key": "Content-Security-Policy", "value": "frame-ancestors 'none'" }
     ]}
   ]
 }
@@ -90,7 +90,7 @@ Dipakai di endpoint mahal: `/api/gemini/*`, `/api/upload`, `/api/pdf/parse`, `/a
 - Disimpan di Firestore `usage/{uid}`: `{ generates, edits, chats, lastResetDate }`.
 - Server `canSpend(uid, "generate"|"edit"|"chat")` → baca doc, reset bila `lastResetDate != hari ini`, cek counter < limit.
 - Setelah sukses, server increment counter.
-- **Limit:** generate 5, edit 7, chat 15 per hari (UTC).
+- **Limit:** generate 5, edit 7, chat 15 per hari (UTC). Definisi: setiap `POST /api/gemini/generate` = 1 generate, setiap `POST /api/gemini/edit` = 1 edit, setiap `POST /api/gemini/chat` = 1 chat.
 - Client **hanya membaca** sisa quota (rules izinkan owner read) untuk tampilan Settings — tidak pernah menulis.
 - Client localStorage tetap dipakai sebagai cache tampilan, tapi bukan otoritatif.
 
