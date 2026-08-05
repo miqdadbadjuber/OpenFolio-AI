@@ -38,9 +38,10 @@ export default function SessionManager({ children }: { children: React.ReactNode
       if (location.pathname === '/' || location.pathname === '') {
         const lastRoute = localStorage.getItem('openfolio_last_route');
 
-        // Guest-only draft key (openfolio_session_guest storage prefix).
-        // The app is guest-only, so there is no user-vs-guest branching anymore.
-        const draftExists = localStorage.getItem('openfolio_session_guest_openfolio_draft');
+        // Draft key must match CanvasPage's getScopedKey('openfolio_draft'):
+        // the app is guest-only with anonymous auth, so drafts persist under `user_<uid>_openfolio_draft`.
+        const uid = auth.currentUser?.uid;
+        const draftExists = uid ? !!localStorage.getItem(`user_${uid}_openfolio_draft`) : false;
 
         // DRAFT RECOVERY PRIORITY
         if (lastRoute && lastRoute !== '/' && lastRoute !== '') {
