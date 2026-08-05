@@ -11,6 +11,7 @@ import { doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp, in
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { getQuota, remaining, QuotaSnapshot } from '../lib/UsageService';
 import { showToast } from '../lib/notify';
+import { apiFetch } from '../lib/api';
 import { useLanguage } from '../lib/LanguageContext';
 
 import { PortfolioData } from '../types';
@@ -354,7 +355,6 @@ export default function CanvasPage() {
     
     // -- EDITOR / INTERVIEW STATES --
     const [input, setInput] = useState('');
-    const [uploadedCvName, setUploadedCvName] = useState('');
     const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState('');
 
     const [uploadingImageCount, setUploadingImageCount] = useState(0);
@@ -437,6 +437,7 @@ export default function CanvasPage() {
     const [editorEmail, setEditorEmail] = useState('');
     const [editorAccent, setEditorAccent] = useState('#C9A84C');
     const [safeMode, setSafeMode] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
 
     const handleDevBypass = async () => {
         console.log("[DEV MODE] Bypassing onboarding with premium editorial identity preset...");
@@ -556,7 +557,12 @@ export default function CanvasPage() {
                         
                         let html = data.htmlContent || data.html || '';
                         if (!html && pContent) {
-                            html = await callInjectAPI(pContent);
+                            try {
+                                html = await callInjectAPI(pContent);
+                            } catch (e) {
+                                console.error("[OpenFolio] Gagal merender ulang portfolio:", e);
+                                html = '';
+                            }
                         }
                         setHtmlContent(html);
                         setGuidedStage('done');
@@ -583,7 +589,12 @@ export default function CanvasPage() {
                         
                         let html = orig.htmlContent || orig.html || '';
                         if (!html && orig.content) {
-                            html = await callInjectAPI(orig.content);
+                            try {
+                                html = await callInjectAPI(orig.content);
+                            } catch (e) {
+                                console.error("[OpenFolio] Gagal merender ulang portfolio:", e);
+                                html = '';
+                            }
                         }
                         setHtmlContent(html);
                         setGuidedStage('done');
@@ -749,9 +760,8 @@ export default function CanvasPage() {
                         name: portfolioName,
                         htmlContent: updatedHtml,
                         content: nextData,
-                        pinned: false,
                         updatedAt: Date.now()
-                    });
+                    }, { merge: true });
                 } else {
                     const stored = localStorage.getItem('openfolio_guest_history');
                     let list = [];
@@ -762,7 +772,6 @@ export default function CanvasPage() {
                         name: portfolioName,
                         htmlContent: updatedHtml,
                         content: nextData,
-                        pinned: false,
                         updatedAt: Date.now()
                     });
                     try {
@@ -856,12 +865,15 @@ export default function CanvasPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ data })
             });
+            if (!responseInject.ok) {
+                throw new Error(`Inject gagal (${responseInject.status})`);
+            }
             const result = await responseInject.text();
             console.log("[OpenFolio] Preview synced via inject API");
             return result;
         } catch (e) {
             console.error(e);
-            return "<html><body>Gagal render.</body></html>";
+            throw new Error("Gagal render portfolio.");
         }
     };
 
@@ -989,12 +1001,28 @@ export default function CanvasPage() {
             await pacerPromise;
 
             // Step 3: Finalize Persistence
+            // Build finalMessages once and use the same array for persist & state (finding #16).
+            const finalMessages = [
+                ...workspaceMessages,
+                {
+                    role: 'assistant',
+                    content: `✨ Halo **${generatedData.name || onboardingName}**! Portofolio profesional Anda kini telah aktif.
+
+Berikut penataan khusus yang barusan saya lakukan:
+1. **Identitas Berbobot**: Arsitektur identitas telah dipoles mencerminkan keprofesionalan Anda di bidang **${generatedData.role || 'Tenaga Ahli'}**.
+2. **Karya & Layanan**: Struktur studi kasus disusun untuk pemahaman instan.
+3. **Sentuhan Artistik**: Menggunakan palet aksen premium untuk kesan eksklusif.
+
+Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah perubahan apa saja.`
+                }
+            ];
+
             setPortfolioData(generatedData);
             setHtmlContent(injectedHtml);
 
             const newId = projectId || `guest_${Date.now()}`;
             const portfolioName = generatedData.name ? `${generatedData.name} Portfolio` : `${onboardingName}`;
-            
+
             if (user) {
                 const docRef = doc(db, 'portfolios', newId);
                 await setDoc(docRef, {
@@ -1002,11 +1030,9 @@ export default function CanvasPage() {
                     name: portfolioName,
                     htmlContent: injectedHtml,
                     content: generatedData,
-                    messages: workspaceMessages,
-                    isPublished: true,
-                    pinned: false,
+                    messages: finalMessages,
                     updatedAt: Date.now()
-                });
+                }, { merge: true });
                 setQuota(await getQuota()); // server sudah menghitung; refresh tampilan kuota
             } else {
                 const stored = localStorage.getItem('openfolio_guest_history');
@@ -1018,9 +1044,7 @@ export default function CanvasPage() {
                     name: portfolioName,
                     htmlContent: injectedHtml,
                     content: generatedData,
-                    messages: workspaceMessages,
-                    isPublished: true,
-                    pinned: false,
+                    messages: finalMessages,
                     updatedAt: Date.now()
                 });
                 try {
@@ -1037,19 +1061,7 @@ export default function CanvasPage() {
             }
 
             setProjectId(newId);
-            setWorkspaceMessages([
-                { 
-                    role: 'assistant', 
-                    content: `✨ Halo **${generatedData.name || onboardingName}**! Portofolio profesional Anda kini telah aktif.
-                    
-Berikut penataan khusus yang barusan saya lakukan:
-1. **Identitas Berbobot**: Arsitektur identitas telah dipoles mencerminkan keprofesionalan Anda di bidang **${generatedData.role || 'Tenaga Ahli'}**.
-2. **Karya & Layanan**: Struktur studi kasus disusun untuk pemahaman instan.
-3. **Sentuhan Artistik**: Menggunakan palet aksen premium untuk kesan eksklusif.
-
-Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah perubahan apa saja.` 
-                }
-            ]);
+            setWorkspaceMessages(finalMessages);
 
             setGuidedStage('done');
             setShowCanvas(true);
@@ -1149,10 +1161,8 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                     htmlContent: updatedHtml,
                     content: updatedData,
                     messages: finalMessages,
-                    isPublished: true,
-                    pinned: false,
                     updatedAt: Date.now()
-                });
+                }, { merge: true });
             } else {
                 const stored = localStorage.getItem('openfolio_guest_history');
                 let list = [];
@@ -1164,8 +1174,6 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                     htmlContent: updatedHtml,
                     content: updatedData,
                     messages: finalMessages,
-                    isPublished: true,
-                    pinned: false,
                     updatedAt: Date.now()
                 });
                 try {
@@ -1207,7 +1215,29 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
         }
     };
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    // Publish flow (Step 5): write the public snapshot via the server endpoint (Task 7).
+    // The private draft stays in `portfolios/{docId}` (merge) — only publish goes through the server.
+    const handlePublish = async () => {
+        if (!portfolioData) {
+            showToast("Belum ada data portfolio untuk dipublikasikan.");
+            return;
+        }
+        setIsPublishing(true);
+        try {
+            const result = await apiFetch<{ url: string }>("/api/portfolio/publish", {
+                method: "POST",
+                body: JSON.stringify({ data: { ...portfolioData, safe_mode: safeMode }, slug: undefined }),
+            });
+            showToast("Portfolio berhasil dipublikasikan!");
+            navigate(result.url);
+        } catch (err: any) {
+            console.error("[Publish]", err);
+            alert(err.message || "Gagal mempublikasikan portfolio.");
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
     const photoInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -1240,11 +1270,6 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         </div>
                     )}
                 </AnimatePresence>
-                <input type="file" ref={fileInputRef} className="hidden" accept=".pdf" onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                        setUploadedCvName(e.target.files[0].name);
-                    }
-                }} />
                 <input type="file" ref={photoInputRef} className="hidden" accept="image/*" onChange={async (e) => {
                     if (e.target.files?.[0]) {
                         const file = e.target.files[0];
@@ -1926,7 +1951,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                 srcDoc={htmlContent} 
                                                 className="w-full h-full border-none bg-transparent focus:outline-none animate-in fade-in duration-700" 
                                                 title="Realtime Build Preview"
-                                                sandbox="allow-scripts allow-same-origin"
+                                                sandbox="allow-scripts"
                                             />
                                         ) : (
                                             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-zinc-950/80 backdrop-blur-sm z-10 animate-in fade-in duration-500">
@@ -2129,7 +2154,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                 srcDoc={htmlContent} 
                                                 className="absolute inset-0 w-full h-full border-none bg-white font-mono" 
                                                 title="Portfolio Full Preview"
-                                                sandbox="allow-scripts allow-same-origin"
+                                                sandbox="allow-scripts"
                                               />
                                          ) : (
                                              <div className="flex flex-col items-center justify-center p-10 opacity-60 m-auto select-none">
@@ -2172,7 +2197,15 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
                                           {/* Action Buttons */}
                                           <div className="flex items-center gap-3">
-                                              {/* Workspace Controls */}
+                                              {/* Publish Button — public snapshot via server (Step 5) */}
+                                              <button
+                                                  onClick={handlePublish}
+                                                  disabled={isPublishing || !portfolioData}
+                                                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                              >
+                                                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
+                                                  <span>{isPublishing ? (lang === 'id' ? 'Mempublikasikan...' : 'Publishing...') : (lang === 'id' ? 'Publikasikan' : 'Publish')}</span>
+                                              </button>
 
                                               {/* Download HTML Button */}
                                               <button 
