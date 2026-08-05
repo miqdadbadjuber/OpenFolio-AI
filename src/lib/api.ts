@@ -6,7 +6,7 @@ export class ApiError extends Error {
 }
 
 async function getToken(): Promise<string> {
-  const user = auth.currentUser;
+  const user = auth?.currentUser ?? null;
   if (!user) throw new ApiError(401, "Sesi tidak tersedia.");
   return user.getIdToken();
 }

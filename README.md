@@ -87,8 +87,9 @@ The client picks its Firebase web config in this order:
 
 1. `VITE_FIREBASE_*` env vars (custom project), if `VITE_FIREBASE_API_KEY` is set;
 2. `firebase-applet-config.json` (auto-provisioned AI Studio / local file);
-3. If neither exists, the app logs a warning and runs with Firebase features disabled rather
-   than crashing — configure one of the above to enable auth and Firestore.
+3. If neither exists (or the config lacks a `projectId`), the module logs a clear warning and
+   the app renders a "Firebase belum dikonfigurasi" notice instead of mounting — it never
+   crashes at import. Configure one of the above to enable auth and Firestore.
 
 ## Deploy to Vercel
 

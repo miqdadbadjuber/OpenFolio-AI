@@ -13,6 +13,11 @@ export default function PublicPortfolioPage() {
   useEffect(() => {
     const fetchPortfolio = async () => {
       if (!id) return;
+      if (!db) {
+        setError('Firebase belum dikonfigurasi.');
+        setLoading(false);
+        return;
+      }
       try {
         const docRef = doc(db, 'publicPortfolios', id);
         const docSnap = await getDoc(docRef);

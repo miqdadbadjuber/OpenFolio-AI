@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
-import { initializeApp, type FirebaseOptions } from "firebase/app";
-import { getAuth, signInAnonymously } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, type FirebaseOptions, type FirebaseApp } from "firebase/app";
+import { getAuth, signInAnonymously, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 type AppConfig = FirebaseOptions & { firestoreDatabaseId?: string };
 
@@ -24,25 +24,38 @@ const customConfig: AppConfig = {
 // Use custom project if API key is provided in Secrets, otherwise fallback to AI Studio's auto-provisioned Firebase
 const finalConfig: AppConfig | undefined = customConfig.apiKey ? customConfig : autoConfig;
 
+// Whether a usable Firebase config is present. When false, the app entry renders a
+// "not configured" notice instead of the app, and NONE of the Firebase instances are
+// constructed: both `getAuth` and `getFirestore` throw synchronously when the app has no
+// own `apiKey` / `projectId` (verified in @firebase/app, @firebase/auth, @firebase/firestore).
+export const hasFirebaseConfig = Boolean(finalConfig?.projectId);
+
 if (!finalConfig) {
-  // Degrade sensibly: warn and initialize with an empty config so module import never
-  // throws. Auth/Firestore calls will fail with clear runtime errors until a config is
-  // provided (firebase-applet-config.json or VITE_FIREBASE_*).
+  // Degrade sensibly: warn instead of throwing at module import. The app entry shows a
+  // "not configured" notice until a config is provided (firebase-applet-config.json or
+  // the VITE_FIREBASE_* variables in `.env.local`).
   console.warn(
     "[firebase] No Firebase config found. Copy `firebase-applet-config.example.json` to " +
       "`firebase-applet-config.json` or set the VITE_FIREBASE_* variables in `.env.local`. " +
       "Authentication and Firestore features are disabled until configured."
   );
+} else if (!hasFirebaseConfig) {
+  console.warn(
+    "[firebase] Firebase config found but it is missing a projectId. Check " +
+      "`firebase-applet-config.json` / the VITE_FIREBASE_PROJECT_ID variable. Firestore " +
+      "features are disabled until a projectId is provided."
+  );
 }
-
-export const app = initializeApp(finalConfig ?? {});
-export const auth = getAuth(app);
 
 // Use specific database ID if provided in config
 const dbId = finalConfig?.firestoreDatabaseId;
-export const db = dbId ? getFirestore(app, dbId) : getFirestore(app);
+
+export const app: FirebaseApp | null = hasFirebaseConfig ? initializeApp(finalConfig!) : null;
+export const auth: Auth | null = app ? getAuth(app) : null;
+export const db: Firestore | null = app ? (dbId ? getFirestore(app, dbId) : getFirestore(app)) : null;
 
 export async function ensureAnonSession(): Promise<void> {
+  if (!auth) return;
   if (auth.currentUser) return;
   await new Promise<void>((resolve) => {
     const unsub = auth.onAuthStateChanged(() => { unsub(); resolve(); });
