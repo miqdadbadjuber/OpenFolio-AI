@@ -7,7 +7,7 @@ import Markdown from 'react-markdown';
 import { TypingText } from '../components/TypingText';
 import { auth, db } from '../lib/firebase';
 import Logo from '../components/Logo';
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { getQuota, remaining, QuotaSnapshot } from '../lib/UsageService';
 import { showToast } from '../lib/notify';
@@ -15,8 +15,6 @@ import { apiFetch } from '../lib/api';
 import { useLanguage } from '../lib/LanguageContext';
 
 import { PortfolioData } from '../types';
-
-const TEMPLATES: any[] = [];
 
 const CHUNKS = [
   "ANALYZING_CORE_IDENTITY",
@@ -355,7 +353,6 @@ export default function CanvasPage() {
     
     // -- EDITOR / INTERVIEW STATES --
     const [input, setInput] = useState('');
-    const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState('');
 
     const [uploadingImageCount, setUploadingImageCount] = useState(0);
 
@@ -1281,7 +1278,6 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         try {
                                 const url = await uploadFile(file);
                                 setHeroData(prev => ({ ...prev, photo: url }));
-                                setUploadedPhotoUrl(url);
                             setSkippedPhoto(false);
                         } catch (err: any) {
                             console.warn("Error converting profile photo:", err);

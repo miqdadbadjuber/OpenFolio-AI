@@ -357,11 +357,6 @@ export const sanitizePortfolioData = (raw: any) => {
           navItems = navItems.filter(item => data.navbar.items.includes(item.label));
       }
       
-      const showName = data.navbar && Array.isArray(data.navbar.items) ? data.navbar.items.includes('Nama') : true;
-      const displayLogo = data.navbar && data.navbar.name_text ? data.navbar.name_text : name;
-      
-      const logoHtml = showName ? `<div class="font-medium tracking-tight text-sm ${style.navText}"><a href="#hero" class="hover:opacity-70 transition-opacity">${displayLogo}</a></div>` : '<div></div>';
-      
       return `
         <nav class="fixed top-0 left-0 right-0 z-[100] px-4 py-4 md:px-12 pointer-events-none">
           <div class="max-w-[1200px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center ${style.navBg} backdrop-blur-xl border ${style.border} rounded-[20px] md:rounded-full px-6 md:px-8 py-3.5 md:py-3.5 pointer-events-auto shadow-sm gap-3 md:gap-0">
