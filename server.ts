@@ -11,6 +11,7 @@ import fs from "fs";
 import os from "os";
 import { PDFParse } from "pdf-parse";
 import rateLimit from "express-rate-limit";
+import { escapeHTML, safeParseJSON, sanitizePortfolioData } from "./server/portfolio-render";
 
 dotenv.config();
 
@@ -18,17 +19,6 @@ const UPLOAD_DIR = path.join(os.tmpdir(), "openfolio_uploads");
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
-
-// XSS Escaper Helper
-const escapeHTML = (str: any) => {
-  if (typeof str !== 'string') return str;
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-};
 
 // Standardize API Key usage
 const API_KEY = process.env.GEMINI_API_KEY_NEW;
@@ -41,66 +31,6 @@ const ai = new GoogleGenAI({
     }
   }
 });
-
-// Robust JSON extraction helper
-function safeParseJSON(text: string, fallback: any = {}): any {
-  if (!text) return fallback;
-  
-  let cleanText = text.trim();
-  
-  // Extract JSON block if it's wrapped
-  const start = cleanText.indexOf('{');
-  const end = cleanText.lastIndexOf('}');
-  if (start !== -1 && end !== -1 && end >= start) {
-    cleanText = cleanText.substring(start, end + 1);
-  }
-
-  // Attempt direct parse of clean block
-  try {
-    return JSON.parse(cleanText);
-  } catch (e) {
-    // If it fails, let's fix typical syntax issues surgically:
-    try {
-      // 1. Remove trailing commas before closing braces/brackets
-      let repaired = cleanText.replace(/,\s*([\]}])/g, '$1');
-      
-      // 2. Fix literal newlines specifically within quoted strings
-      let inString = false;
-      let escaped = false;
-      let processed = "";
-      for (let i = 0; i < repaired.length; i++) {
-        const char = repaired[i];
-        if (char === '"' && !escaped) {
-          inString = !inString;
-          processed += char;
-        } else if (inString && (char === '\n' || char === '\r')) {
-          processed += '\\n';
-        } else {
-          processed += char;
-        }
-        
-        if (char === '\\' && !escaped) {
-          escaped = true;
-        } else {
-          escaped = false;
-        }
-      }
-      
-      return JSON.parse(processed);
-    } catch (innerE) {
-      console.error("[JSON Parser] Healing attempt failed too:", innerE);
-      try {
-        const bruteClean = cleanText
-          .replace(/,\s*([\]}])/g, '$1')
-          .replace(/(?:\r\n|\r|\n)/g, ' ');
-        return JSON.parse(bruteClean);
-      } catch (bruteE) {
-        console.error("[JSON Parser] Critical failure on brute parse:", bruteE);
-      }
-    }
-    return fallback;
-  }
-}
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -844,107 +774,6 @@ Format JSON:
       res.status(isOverloaded ? 503 : 500).json({ error: isOverloaded ? "Model sedang sibuk. Silakan coba klik tombol kirim lagi dalam beberapa detik." : "Gagal memproses revisi identitas." });
     }
   });
-
-  // Data Sanitization & Normalization Layer (The Guardian of Render Integrity)
-  const sanitizePortfolioData = (raw: any) => {
-    const d = raw || {};
-    
-    // Core Identity
-    const clean: any = {
-      name: escapeHTML((typeof d.name === 'string' && d.name) ? d.name : ""),
-      role: escapeHTML((typeof d.role === 'string' && d.role) ? d.role : ""),
-      hero_description: escapeHTML((typeof d.hero_description === 'string' && d.hero_description) ? d.hero_description : ""),
-      // Fix: Ensure hero_image_url is preserved from profilePhoto if LLM misses it
-      hero_image_url: d.hero_image_url || d.profilePhoto || null,
-      color_accent: (typeof d.color_accent === 'string' && d.color_accent.startsWith('#')) ? escapeHTML(d.color_accent) : "#6366F1",
-      color_accent_hover: (typeof d.color_accent_hover === 'string' && d.color_accent_hover.startsWith('#')) ? escapeHTML(d.color_accent_hover) : null,
-      footer_year: escapeHTML(d.footer_year || new Date().getFullYear().toString()),
-      templateName: escapeHTML(d.templateName || "obsidian"),
-      safe_mode: d.safe_mode === true
-    };
-
-    // Visual Behavior Fallbacks
-    const b = d.visual_behavior || {};
-    const identity_tone = escapeHTML(b.identity_tone || 'stoic');
-    
-    clean.visual_behavior = {
-      identity_tone,
-      layout_density: escapeHTML(b.layout_density || 'balanced'),
-      asymmetry_level: typeof b.asymmetry_level === 'number' ? Math.min(Math.max(b.asymmetry_level, 0), 0.1) : 0.1,
-      typography_scale: escapeHTML(b.typography_scale || 'balanced'),
-      motion_intensity: escapeHTML(b.motion_intensity || 'subtle'),
-      content_pacing: escapeHTML(b.content_pacing || 'deliberate')
-    };
-
-    // Force strict dampening by default to secure professional balance
-    clean.visual_behavior.asymmetry_level = Math.min(clean.visual_behavior.asymmetry_level, 0.08);
-    
-    // Strict typography mapping & hard clamp
-    let tScale = clean.visual_behavior.typography_scale;
-    if (tScale === 'oversized' || tScale === 'standard') {
-      clean.visual_behavior.typography_scale = 'balanced';
-    } else if (tScale === 'minimal') {
-      clean.visual_behavior.typography_scale = 'compact';
-    } else if (tScale !== 'balanced' && tScale !== 'compact' && tScale !== 'editorial') {
-      clean.visual_behavior.typography_scale = 'balanced';
-    }
-
-    // Layout Config
-    const l = d.layout_config || {};
-    clean.layout_config = {
-      section_ordering: Array.isArray(l.section_ordering) ? l.section_ordering.map(escapeHTML) : ['hero', 'about', 'career', 'projects', 'skills', 'contact'],
-      show_navbar: typeof l.show_navbar === 'boolean' ? l.show_navbar : true
-    };
-    
-    clean.navbar = d.navbar || null;
-
-    const sanitizeUrl = (url: string) => {
-      if (!url || url === "#") return "#";
-      const u = url.trim().toLowerCase();
-      if (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("mailto:") || u.startsWith("data:")) return escapeHTML(url.trim());
-      return "#";
-    };
-
-    // Socials
-    const s = d.socials || {};
-    clean.socials = {};
-    const allowedSocials = ['linkedin', 'github', 'website', 'twitter', 'x', 'instagram', 'dribbble', 'whatsapp'];
-    allowedSocials.forEach(k => {
-      if (s[k] && s[k] !== '#') clean.socials[k] = sanitizeUrl(s[k]);
-    });
-
-    // About
-    clean.about_paragraph_1 = escapeHTML(d.about_paragraph_1 || clean.hero_description || "");
-    clean.about_paragraph_2 = escapeHTML(d.about_paragraph_2 || "");
-    clean.contact_email = escapeHTML(d.contact_email || "");
-    clean.contact_location = escapeHTML(d.contact_location || "");
-
-    // Collections with Defensive Mapping
-    clean.skills = Array.isArray(d.skills) ? d.skills.filter((sk: any) => sk && sk.title).map((sk: any) => ({
-      title: escapeHTML(sk.title),
-      items: Array.isArray(sk.items) ? sk.items.filter((i: any) => typeof i === 'string' && i.length > 0).map(escapeHTML) : [],
-      visual_weight: typeof sk.visual_weight === 'number' ? sk.visual_weight : 5
-    })) : [];
-
-    clean.projects = Array.isArray(d.projects) ? d.projects.filter((p: any) => p && (p.title || p.name)).map((p: any) => ({
-      title: escapeHTML(p.title || p.name),
-      description: escapeHTML(p.description || ""),
-      image_url: sanitizeUrl(p.image_url),
-      link: sanitizeUrl(p.link),
-      tags: Array.isArray(p.tags) ? p.tags.filter((t: any) => typeof t === 'string').map(escapeHTML) : [],
-      visual_priority: escapeHTML(p.visual_priority || 'medium'),
-      crop_strategy: escapeHTML(p.crop_strategy || 'cover')
-    })) : [];
-
-    clean.career = Array.isArray(d.career) ? d.career.map((c: any) => ({
-      period: escapeHTML(c?.period || ""),
-      role: escapeHTML(c?.role || "Professional"),
-      company: escapeHTML(c?.company || "Independent"),
-      description: escapeHTML(c?.description || "")
-    })) : [];
-
-    return clean;
-  };
 
   // String builder to replace the template engine with Layout Intelligence & Visual Rhythm
   const buildPortfolioHTMLString = (rawContent: any) => {

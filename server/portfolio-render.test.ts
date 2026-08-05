@@ -1,0 +1,42 @@
+import { describe, it, expect } from "vitest";
+import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData } from "./portfolio-render";
+
+describe("escapeHTML", () => {
+  it("meng-escape karakter berbahaya", () => {
+    expect(escapeHTML("<script>alert(1)</script>")).toBe("&lt;script&gt;alert(1)&lt;/script&gt;");
+  });
+});
+
+describe("safeParseJSON", () => {
+  it("mengekstrak JSON dari teks campur", () => {
+    const out = safeParseJSON('Teks { "a": 1, } trailing', {});
+    expect(out.a).toBe(1);
+  });
+  it("return fallback bila gagal", () => {
+    expect(safeParseJSON("bukan json", "fb")).toBe("fb");
+  });
+});
+
+describe("slugify", () => {
+  it("mengubah nama jadi slug aman", () => {
+    expect(slugify("Nama Saya! Ke-2")).toBe("nama-saya-ke-2");
+  });
+  it("fallback bila kosong", () => {
+    expect(slugify("")).toBe("portfolio");
+  });
+});
+
+describe("sanitizePortfolioData", () => {
+  it("memblokir data: URL pada link proyek", () => {
+    const out = sanitizePortfolioData({ projects: [{ title: "p", link: "data:text/html,<script>1</script>" }] });
+    expect(out.projects[0].link).toBe("#");
+  });
+  it("mengizinkan https URL", () => {
+    const out = sanitizePortfolioData({ projects: [{ title: "p", link: "https://example.com" }] });
+    expect(out.projects[0].link).toBe("https://example.com");
+  });
+  it("meng-escape nama", () => {
+    const out = sanitizePortfolioData({ name: "<b>x</b>" });
+    expect(out.name).toBe("&lt;b&gt;x&lt;/b&gt;");
+  });
+});
