@@ -11,6 +11,7 @@ import { PDFParse } from "pdf-parse";
 import rateLimit from "express-rate-limit";
 import { escapeHTML, safeParseJSON, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { initAdmin, requireAuth } from "./auth";
+import { canSpend, markSpent, type QuotaType } from "./quota";
 
 dotenv.config();
 initAdmin();
@@ -71,6 +72,15 @@ async function startServer() {
     legacyHeaders: false,
   });
   app.use("/api/gemini", aiRateLimiter);
+
+  async function guardQuota(uid: string, type: QuotaType, res: any): Promise<boolean> {
+    const ok = await canSpend(uid, type);
+    if (!ok) {
+      res.status(429).json({ error: `Kamu sudah mencapai limit harian (${type}). Coba lagi besok.` });
+      return false;
+    }
+    return true;
+  }
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
@@ -145,6 +155,7 @@ async function startServer() {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
+    if (!(await guardQuota(req.user!.uid, "chat", res))) return;
     try {
       const { messages } = req.body;
       const history = messages.map((m: any) => ({
@@ -169,6 +180,7 @@ async function startServer() {
         }
       }
       res.end();
+      await markSpent(req.user!.uid, "chat");
     } catch (e: any) {
       const errorStr = e.toString() + (e.message || "");
       const isQuotaExhausted = errorStr.includes("429") || errorStr.toLowerCase().includes("quota") || errorStr.toLowerCase().includes("exhausted");
@@ -297,6 +309,7 @@ async function startServer() {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
+    if (!(await guardQuota(req.user!.uid, "generate", res))) return;
     try {
       const { messages, selectedTemplate, structuredData } = req.body;
       const conversationText = (messages || []).map((m:any) => m.role + ": " + m.content).join("\n");
@@ -582,6 +595,7 @@ ${conversationText}`;
         dataJson = buildLocalFallbackData(structuredData, selectedTemplate || "folio");
       }
 
+      await markSpent(req.user!.uid, "generate");
       res.status(200).json(dataJson);
     } catch (e: any) {
       if (e.message === "QUOTA_EXHAUSTED") {
@@ -600,6 +614,7 @@ ${conversationText}`;
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
+    if (!(await guardQuota(req.user!.uid, "edit", res))) return;
     console.log("[EDIT PIPELINE] Request received");
     try {
       const { currentData, userMessage, history } = req.body;
@@ -775,6 +790,7 @@ Format JSON:
       }
       
       console.log("[EDIT PIPELINE] Parsed successfully");
+      await markSpent(req.user!.uid, "edit");
       res.json(parsed);
     } catch (e: any) {
       if (e.message === "QUOTA_EXHAUSTED") {
