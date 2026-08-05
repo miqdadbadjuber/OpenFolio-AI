@@ -3,6 +3,7 @@ import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
 import multer from "multer";
+import { fileTypeFromBuffer } from "file-type";
 import { v2 as cloudinary } from "cloudinary";
 import { GoogleGenAI, Type } from "@google/genai";
 import fs from "fs";
@@ -43,18 +44,20 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const upload = multer({ 
-  dest: UPLOAD_DIR, 
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
-    if (allowedMimeTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type. Only PDF and images are allowed."));
-    }
-  }
-});
+const FILE_LIMIT = 2 * 1024 * 1024; // 2MB
+
+const multerDisk = (dest: string) =>
+  multer({ dest, limits: { fileSize: FILE_LIMIT } });
+
+const uploadImage = multerDisk(UPLOAD_DIR).single("file");
+const uploadPdf = multerDisk(UPLOAD_DIR).single("file");
+
+const ALLOWED_IMAGE_MAGIC = new Set(["jpg", "png", "webp"]);
+async function assertMagicBytes(filePath: string, allowed: Set<string>): Promise<boolean> {
+  const buf = await fs.promises.readFile(filePath);
+  const type = await fileTypeFromBuffer(buf);
+  return !!type && allowed.has(type.ext);
+}
 
 async function startServer() {
   const app = express();
@@ -74,6 +77,16 @@ async function startServer() {
   });
   app.use("/api/gemini", aiRateLimiter);
 
+  const fileLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: "Terlalu banyak permintaan. Coba lagi nanti." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use("/api/upload", fileLimiter);
+  app.use("/api/pdf/parse", fileLimiter);
+
   async function guardQuota(uid: string, type: QuotaType, res: any): Promise<boolean> {
     const ok = await canSpend(uid, type);
     if (!ok) {
@@ -87,67 +100,47 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // PDF Parser Route
-  app.post("/api/pdf/parse", requireAuth, upload.single("file"), async (req, res) => {
+  app.post("/api/pdf/parse", requireAuth, uploadPdf, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File tidak ada." });
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file provided" });
+      const buf = await fs.promises.readFile(req.file.path);
+      const type = await fileTypeFromBuffer(buf);
+      if (!type || type.ext !== "pdf") {
+        await fs.promises.unlink(req.file.path).catch(() => {});
+        return res.status(400).json({ error: "Hanya file PDF yang didukung." });
       }
-      const dataBuffer = await fs.promises.readFile(req.file.path);
-      const parser = new PDFParse({ data: dataBuffer });
+      const parser = new PDFParse({ data: buf });
       const data = await parser.getText();
       res.json({ text: data.text });
-    } catch (e: any) {
-      console.error("PDF Parse Error:", e);
-      res.status(500).json({ error: "Gagal memproses file" });
+    } catch (e) {
+      console.error("[PDF Parse]", e);
+      res.status(500).json({ error: "Gagal memproses file." });
     } finally {
-      if (req.file?.path) {
-        try { await fs.promises.unlink(req.file.path); } catch(err){}
-      }
+      if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
     }
   });
 
-      // Image Upload Route
-  app.post("/api/upload", requireAuth, upload.single("file"), async (req, res, next) => {
-    let tempPath = "";
+  app.post("/api/upload", requireAuth, uploadImage, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File tidak ada." });
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file provided" });
+      const ok = await assertMagicBytes(req.file.path, ALLOWED_IMAGE_MAGIC);
+      if (!ok) {
+        await fs.promises.unlink(req.file.path).catch(() => {});
+        return res.status(400).json({ error: "Tipe file tidak didukung. Hanya JPG, PNG, atau WebP." });
       }
-      
-      let finalUrl = "";
-
       if (!process.env.CLOUDINARY_API_KEY) {
-         console.log(`[Upload API] Falling back to Data URI for ${req.file.originalname}`);
-         const fileBuffer = await fs.promises.readFile(req.file.path);
-         const b64 = fileBuffer.toString("base64");
-         finalUrl = "data:" + req.file.mimetype + ";base64," + b64;
-         console.log(`[Upload API] Generated Base64 URI of length ${finalUrl.length}`);
-      } else {
-         console.log(`[Upload API] Uploading to Cloudinary for ${req.file.originalname}...`);
-         tempPath = req.file.path + (path.extname(req.file.originalname) || ".jpg");
-         await fs.promises.rename(req.file.path, tempPath);
-         const result = await cloudinary.uploader.upload(tempPath, {
-           folder: "openfolio",
-           timeout: 50000
-         });
-         finalUrl = result.secure_url;
-         console.log(`[Upload API] Cloudinary upload finished. URL length: ${finalUrl.length}`);
+        await fs.promises.unlink(req.file.path).catch(() => {});
+        return res.status(503).json({ error: "Upload belum dikonfigurasi." });
       }
-      
-      res.json({ url: finalUrl });
+      const tempPath = req.file.path + (path.extname(req.file.originalname) || ".jpg");
+      await fs.promises.rename(req.file.path, tempPath);
+      const result = await cloudinary.uploader.upload(tempPath, { folder: "openfolio", timeout: 50000 });
+      await fs.promises.unlink(tempPath).catch(() => {});
+      res.json({ url: result.secure_url });
     } catch (e: any) {
-      console.error(`[Upload API] Upload rejected:`, e);
-      const errorMsg = e.message || "";
-      const status = e.http_code || (errorMsg.toLowerCase().includes("invalid") ? 400 : 500);
-      res.status(status).json({ error: "Gagal memproses file" });
-    } finally {
-      if (req.file?.path) {
-         try { await fs.promises.unlink(req.file.path); } catch (err) {}
-      }
-      if (tempPath !== "") {
-         try { await fs.promises.unlink(tempPath); } catch(err) {}
-      }
+      console.error("[Upload]", e);
+      if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
+      res.status(500).json({ error: "Gagal mengunggah file." });
     }
   });
 
