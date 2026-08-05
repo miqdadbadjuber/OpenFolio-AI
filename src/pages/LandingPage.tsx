@@ -13,10 +13,7 @@ export default function LandingPage() {
             <span className="font-semibold text-white tracking-wide uppercase text-sm">OpenFolio</span>
           </Link>
           <div className="flex items-center gap-6">
-            <Link to="/login" className="text-xs font-semibold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors hidden md:block">
-              Sign In
-            </Link>
-            <Link to="/login?register=true" className="bg-white text-black px-6 py-2.5 rounded-none font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-colors">
+            <Link to="/app" className="bg-white text-black px-6 py-2.5 rounded-none font-bold text-xs uppercase tracking-widest hover:bg-zinc-200 transition-colors">
               Deploy
             </Link>
           </div>
@@ -89,7 +86,6 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-8 text-xs font-mono uppercase tracking-widest text-zinc-600">
             <Link to="/app" className="hover:text-white transition-colors">App</Link>
-            <Link to="/login" className="hover:text-white transition-colors">Login</Link>
             <a href="https://github.com/MiqdadBadjuber/OpenFolio-AI" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
           </div>
         </div>
