@@ -22,7 +22,7 @@ export const TypingText: React.FC<TypingTextProps> = ({ text, speed = 15, onComp
     }
 
     if (currentIndex < text.length) {
-      const currentChar = text[currentIndex];
+      const currentChar = text[currentIndex]!;
       let delay = speed;
       
       // Dynamic pauses based on cinematic typing rhythm

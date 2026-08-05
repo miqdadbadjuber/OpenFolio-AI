@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { evaluateUsage, resetIfNeeded, QUOTA_LIMITS, type UsageDoc } from "./quota";
 
-const base: UsageDoc = { generates: 0, edits: 0, chats: 0, lastResetDate: new Date().toISOString().split("T")[0] };
+const base: UsageDoc = { generates: 0, edits: 0, chats: 0, lastResetDate: new Date().toISOString().split("T")[0] ?? "" };
 
 describe("evaluateUsage", () => {
   it("mengizinkan saat belum penuh", () => {

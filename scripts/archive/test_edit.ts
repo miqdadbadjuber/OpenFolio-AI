@@ -40,7 +40,7 @@ Format JSON:
     console.log("Response text:", response.text);
     
     // safeParseJSON equivalent
-    let text = response.text;
+    let text = response.text ?? "";
     let cleanText = text.trim();
     const start = cleanText.indexOf('{');
     const end = cleanText.lastIndexOf('}');

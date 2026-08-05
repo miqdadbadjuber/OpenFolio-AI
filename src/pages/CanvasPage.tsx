@@ -187,9 +187,9 @@ const CareerPeriodInput = ({
     let month = "";
     let year = value;
     
-    if (parts.length >= 2 && months.includes(parts[0])) {
-        month = parts[0];
-        year = parts[1];
+    if (parts.length >= 2 && months.includes(parts[0]!)) {
+        month = parts[0]!;
+        year = parts[1]!;
     } else if (value === "Sekarang") {
         year = "Sekarang";
         month = "";
@@ -340,13 +340,13 @@ export default function CanvasPage() {
     // Mutators backward compatibility
     const setOnboardingName = (v: string | ((prev: string) => string)) => setDraftPortfolio(prev => ({ ...prev, name: typeof v === 'function' ? v(prev.name) : v as string }));
     const setOnboardingProfession = (v: string | ((prev: string) => string)) => setDraftPortfolio(prev => ({ ...prev, profession: typeof v === 'function' ? v(prev.profession) : v as string }));
-    const setNavbarConfig = (v: any) => setDraftPortfolio(prev => ({ ...prev, navbar: typeof v === 'function' ? v(prev.navbar) : v }));
-    const setHeroData = (v: any) => setDraftPortfolio(prev => ({ ...prev, hero: typeof v === 'function' ? v(prev.hero) : v }));
-    const setAboutText = (v: any) => setDraftPortfolio(prev => ({ ...prev, about: typeof v === 'function' ? v(prev.about) : v as string }));
-    const setSkillsList = (v: any) => setDraftPortfolio(prev => ({ ...prev, skills: typeof v === 'function' ? v(prev.skills) : v }));
-    const setCareerTimeline = (v: any) => setDraftPortfolio(prev => ({ ...prev, career: typeof v === 'function' ? v(prev.career) : v }));
-    const setContactInfo = (v: any) => setDraftPortfolio(prev => ({ ...prev, contact: typeof v === 'function' ? v(prev.contact) : v }));
-    const setStructuredProjects = (v: any) => setDraftPortfolio(prev => ({ ...prev, projects: typeof v === 'function' ? v(prev.projects) : v }));
+    const setNavbarConfig = (v: FormDraft['navbar'] | ((prev: FormDraft['navbar']) => FormDraft['navbar'])) => setDraftPortfolio(prev => ({ ...prev, navbar: typeof v === 'function' ? v(prev.navbar) : v }));
+    const setHeroData = (v: FormDraft['hero'] | ((prev: FormDraft['hero']) => FormDraft['hero'])) => setDraftPortfolio(prev => ({ ...prev, hero: typeof v === 'function' ? v(prev.hero) : v }));
+    const setAboutText = (v: string | ((prev: string) => string)) => setDraftPortfolio(prev => ({ ...prev, about: typeof v === 'function' ? v(prev.about) : v as string }));
+    const setSkillsList = (v: SkillItem[] | ((prev: SkillItem[]) => SkillItem[])) => setDraftPortfolio(prev => ({ ...prev, skills: typeof v === 'function' ? v(prev.skills) : v }));
+    const setCareerTimeline = (v: CareerItem[] | ((prev: CareerItem[]) => CareerItem[])) => setDraftPortfolio(prev => ({ ...prev, career: typeof v === 'function' ? v(prev.career) : v }));
+    const setContactInfo = (v: ContactData | ((prev: ContactData) => ContactData)) => setDraftPortfolio(prev => ({ ...prev, contact: typeof v === 'function' ? v(prev.contact) : v }));
+    const setStructuredProjects = (v: ProjectInput[] | ((prev: ProjectInput[]) => ProjectInput[])) => setDraftPortfolio(prev => ({ ...prev, projects: typeof v === 'function' ? v(prev.projects) : v }));
 
     // Add setMessages alias for workspaceMessages to satisfy existing code
     const setMessages = setWorkspaceMessages;
@@ -485,14 +485,14 @@ export default function CanvasPage() {
                 {
                     title: "Linear Integration Portal",
                     description: "Mendesain dasbor real-time performa tinggi yang terintegrasi penuh dengan api Linear guna pelacakan proyek terpadu bagi internal developer.",
-                    image_url: null,
+                    image_url: "",
                     link: "https://linear.app",
                     tags: ["System Integration", "React", "NodeJS"]
                 },
                 {
                     title: "Aetherial Canvas Engine",
                     description: "Pustaka rendering webgl modular berbasis tipe data terstruktur untuk menyajikan transisi antarmuka tiga dimensi yang mulus.",
-                    image_url: null,
+                    image_url: "",
                     link: "#",
                     tags: ["WebGL", "TypeScript", "Creative Code"]
                 }
@@ -1874,7 +1874,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                         { label: "Content Assembly", threshold: 90 },
                                         { label: "Final Rendering", threshold: 100 }
                                     ].map((step, idx, arr) => {
-                                        const prevThreshold = idx === 0 ? 0 : arr[idx-1].threshold;
+                                        const prevThreshold = idx === 0 ? 0 : arr[idx-1]!.threshold;
                                         const isActive = loadingPct >= prevThreshold && loadingPct < step.threshold;
                                         const isCompleted = loadingPct >= step.threshold;
                                         
