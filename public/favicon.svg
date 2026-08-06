@@ -3,12 +3,16 @@
     <linearGradient id="openfolio-favicon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stopColor="#FFFFFF" />
       <stop offset="50%" stopColor="#D4D4D8" />
-      <stop offset="100%" stopColor="#71717A" />
+      <stop offset="100%" stopColor="#A1A1AA" />
     </linearGradient>
   </defs>
-  <!-- Logo OpenFolio (spiral lingkaran) — transparan, tanpa background. Sama dengan Logo.tsx di aplikasi. -->
+  <!-- Logo OpenFolio (spiral lingkaran) — transparan tanpa background. Stroke tipis
+       putih bikin logo tetap terlihat jelas di tab browser gelap. -->
   <path
     d="M 26.192 85.808 A 43 43 0 1 1 32.654 89.346 L 43.694 78.306 A 29 29 0 1 0 36.391 75.609 Z"
     fill="url(#openfolio-favicon-grad)"
+    stroke="rgba(255,255,255,0.65)"
+    stroke-width="1.4"
+    stroke-linejoin="round"
   />
 </svg>
