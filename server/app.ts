@@ -31,6 +31,10 @@ if (!API_KEY) {
   console.warn("GEMINI_API_KEY tidak ditemukan — fitur AI nonaktif sampai diisi.");
 }
 
+// Model gemini-2.5-flash sudah dihapus Google (404 untuk akun baru per 2026-08).
+// Alias "-latest" mengikuti model flash terbaru agar tidak kedaluwarsa lagi.
+const GEMINI_MODEL = "gemini-flash-latest";
+
 const ai = API_KEY ? new GoogleGenAI({
   apiKey: API_KEY,
   httpOptions: {
@@ -383,7 +387,7 @@ ${conversationText}`;
         while (attempt < maxAttempts) {
           try {
             response = await ai.models.generateContent({
-              model: "gemini-2.5-flash",
+              model: GEMINI_MODEL,
               contents: prompt,
               config: {
                 responseMimeType: "application/json",
@@ -657,7 +661,7 @@ Format JSON:
       while (attempt < maxAttempts) {
         try {
           response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: GEMINI_MODEL,
             contents: prompt,
             config: {
               responseMimeType: "application/json"
