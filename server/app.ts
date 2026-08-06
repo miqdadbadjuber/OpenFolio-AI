@@ -9,7 +9,6 @@ import { v2 as cloudinary } from "cloudinary";
 import { GoogleGenAI, Type } from "@google/genai";
 import fs from "fs";
 import os from "os";
-import { PDFParse } from "pdf-parse";
 import rateLimit from "express-rate-limit";
 import { getFirestore } from "firebase-admin/firestore";
 import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
@@ -121,6 +120,7 @@ async function startServer() {
         await fs.promises.unlink(req.file.path).catch(() => {});
         return res.status(400).json({ error: "Hanya file PDF yang didukung." });
       }
+      const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: buf });
       const data = await parser.getText();
       res.json({ text: data.text });
