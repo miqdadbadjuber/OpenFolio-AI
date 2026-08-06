@@ -62,15 +62,12 @@ Cloudinary for image uploads.
 2. Create your local environment file:
 
    ```bash
-   cp .env.example .env.local
+   cp .env.example .env
    ```
 
-3. Set the required values in `.env.local`:
+3. Set the required values in `.env`:
    - `GEMINI_API_KEY` — your [Google AI Studio](https://aistudio.google.com/app/apikey) key.
-   - Firebase client config — **either** copy `firebase-applet-config.example.json` to
-     `firebase-applet-config.json` and fill in your Firebase web config, **or** set the
-     `VITE_FIREBASE_*` variables in `.env.local`. (The real `firebase-applet-config.json`
-     is gitignored; the example is committed.)
+   - Firebase client config — set the `VITE_FIREBASE_*` variables (see *Firebase setup* below).
    - Firebase Admin service account — `FIREBASE_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`,
      `FIREBASE_ADMIN_PRIVATE_KEY` (needed for authenticated API endpoints; see below).
    - Cloudinary — `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
@@ -83,13 +80,10 @@ Cloudinary for image uploads.
 
 ### Config precedence
 
-The client picks its Firebase web config in this order:
-
-1. `VITE_FIREBASE_*` env vars (custom project), if `VITE_FIREBASE_API_KEY` is set;
-2. `firebase-applet-config.json` (auto-provisioned AI Studio / local file);
-3. If neither exists (or the config lacks a `projectId`), the module logs a clear warning and
-   the app renders a "Firebase belum dikonfigurasi" notice instead of mounting — it never
-   crashes at import. Configure one of the above to enable auth and Firestore.
+The client's Firebase web config comes solely from the `VITE_FIREBASE_*` environment
+variables (see `.env.example`). If they are missing (or lack an `apiKey` / `projectId`),
+the module logs a clear warning and the app renders a "Firebase belum dikonfigurasi" notice
+instead of mounting — it never crashes at import. Set them to enable auth and Firestore.
 
 ## Deploy to Vercel
 
@@ -116,8 +110,7 @@ The client picks its Firebase web config in this order:
    | `CORS_ORIGIN` | No | Comma-separated allowed origins. Defaults to `http://localhost:3001`. |
    | `APP_URL` | No | Reserved; the public URL of the deployment. Not currently read by the server. |
 
-   > The `VITE_FIREBASE_*` variables are what make the client work on Vercel, since the
-   > gitignored `firebase-applet-config.json` is not present in a fresh clone. There is no
+   > The `VITE_FIREBASE_*` variables are what make the client work on Vercel. There is no
    > runtime secret in them — Firebase web config is public by design.
 
 3. Deploy. Vercel runs `vite build` and bundles `api/index.ts` as the serverless function.
@@ -145,8 +138,8 @@ The client picks its Firebase web config in this order:
    and `FIREBASE_ADMIN_PRIVATE_KEY`.
 
 5. **Add the web app** (for the client config) — Project settings → General → *Your apps* →
-   Add web app. Use its config values either in `firebase-applet-config.json` (copy the
-   example file) or as `VITE_FIREBASE_*` env vars.
+   Add web app. Set its config values as the `VITE_FIREBASE_*` variables in `.env` /
+   Vercel environment variables (see `.env.example`).
 
 ## Cloudinary setup
 

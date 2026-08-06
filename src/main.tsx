@@ -26,10 +26,9 @@ function FirebaseNotConfiguredNotice() {
     <div style={noticeStyle}>
       <h1 style={{ margin: '0 0 12px', fontSize: 22 }}>Firebase belum dikonfigurasi</h1>
       <p style={{ margin: 0, lineHeight: 1.6 }}>
-        Salin <code>firebase-applet-config.example.json</code> menjadi{' '}
-        <code>firebase-applet-config.json</code> (atau set variabel{' '}
-        <code>VITE_FIREBASE_*</code> di <code>.env.local</code>), lalu muat ulang halaman.
-        Panduan lengkap: buka bagian <em>Firebase setup</em> di README.
+        Salin <code>.env.example</code> menjadi <code>.env</code> dan isi variabel{' '}
+        <code>VITE_FIREBASE_*</code>, lalu muat ulang halaman. Panduan lengkap: buka bagian{' '}
+        <em>Firebase setup</em> di README.
       </p>
     </div>
   );

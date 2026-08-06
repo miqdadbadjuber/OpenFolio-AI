@@ -2,6 +2,7 @@ node_modules/
 build/
 dist/
 .claude/
+.superpowers/
 coverage/
 .DS_Store
 *.log
