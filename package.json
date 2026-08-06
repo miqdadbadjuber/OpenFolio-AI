@@ -38,6 +38,9 @@
     "vite": "^6.2.3",
     "zod": "^4.4.3"
   },
+  "overrides": {
+    "jose": "4.15.5"
+  },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
