@@ -33,6 +33,12 @@ export default function AppLayout({
     const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
     return isMobile ? false : !defaultClosed;
   });
+  // True on phones/tablets (<768px). On mobile the sidebar drawer keeps a fixed
+  // width and only slides via transform — animating width on a phone forces a
+  // full layout + backdrop recompute every frame, which is the main jank source.
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+  );
   const [user, setUser] = useState<User | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
@@ -49,6 +55,15 @@ export default function AppLayout({
       setUser(u);
     });
     return unsubAuth;
+  }, []);
+
+  // Keep isMobile in sync when the device/breakpoint changes (e.g. rotating).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
   useEffect(() => {
@@ -284,28 +299,32 @@ export default function AppLayout({
         )}
       </AnimatePresence>
 
-      {/* Mobile drawer backdrop (md+ hidden) */}
+      {/* Mobile drawer backdrop (md+ hidden) — solid tint, no blur (backdrop-filter is
+          one of the most expensive effects on phones; a dark tint reads the same) */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-[190] bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-[190] bg-black/70 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar — desktop: collapsible column; mobile: full-height drawer */}
-      <motion.div
-        initial={{ width: isSidebarOpen ? 260 : 72 }}
-        animate={{ width: isSidebarOpen ? 260 : 72 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      {/* Sidebar — desktop: collapsible column; mobile: full-height drawer.
+          Plain CSS transitions instead of a motion width animation: width is a
+          layout property, and animating it (esp. with backdrop-blur) is what
+          made the mobile drawer stutter. On mobile the width stays fixed at
+          260px and only transform (translate-x) animates — that's GPU-cheap. */}
+      <div
         onClick={() => {
            if (!isSidebarOpen) setIsSidebarOpen(true);
         }}
-        className={`flex flex-col bg-[#050506]/90 backdrop-blur-3xl border-r border-white-[0.02] border-r-white/[0.02] h-full overflow-hidden shrink-0 select-none will-change-transform z-[200] md:z-[150] fixed inset-y-0 left-0 md:relative md:inset-auto transition-transform duration-300 ease-out md:transition-none ${
+        className={`flex flex-col bg-[#050506] border-r border-white-[0.02] border-r-white/[0.02] h-full overflow-hidden shrink-0 select-none will-change-transform z-[200] md:z-[150] fixed inset-y-0 left-0 md:relative md:inset-auto transition-[width,transform] duration-300 ease-out ${
+          isMobile || isSidebarOpen ? 'w-[260px]' : 'w-[72px]'
+        } ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 ${!isSidebarOpen ? 'cursor-pointer hover:bg-[#080809]' : ''}`}
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(30,58,138,0.03),transparent_70%)] pointer-events-none" />
-        <div className={`pt-5 pb-4 h-full flex flex-col relative z-10 select-none transition-all duration-300 ${isSidebarOpen ? 'w-[260px] px-4' : 'w-[72px] px-0 items-center'}`}>
+        <div className={`pt-5 pb-4 h-full flex flex-col relative z-10 select-none transition-[width] duration-300 ease-out ${isMobile || isSidebarOpen ? 'w-[260px] px-4' : 'w-[72px] px-0 items-center'}`}>
           <div className={`flex items-center mb-5 ${isSidebarOpen ? 'justify-between px-1' : 'justify-center w-full'}`}>
             <div 
               className={`flex items-center gap-2 ${isSidebarOpen ? 'cursor-pointer group' : ''}`} 
@@ -338,7 +357,7 @@ export default function AppLayout({
               e.stopPropagation();
               if (!isSidebarOpen) { setIsSidebarOpen(true); } else { navigate('/app'); }
             }}
-            className={`flex items-center justify-center gap-2 bg-white/[0.02] backdrop-blur-md border border-white/[0.05] hover:border-white/10 hover:bg-white/[0.03] text-zinc-300 hover:text-white mb-4 transition-all shadow-xl shadow-black/10 cursor-pointer group flex-shrink-0 ${isSidebarOpen ? 'w-full p-3 rounded-2xl' : 'w-10 h-10 rounded-xl p-0'}`}
+            className={`flex items-center justify-center gap-2 bg-white/[0.02] border border-white/[0.05] hover:border-white/10 hover:bg-white/[0.03] text-zinc-300 hover:text-white mb-4 transition-all shadow-xl shadow-black/10 cursor-pointer group flex-shrink-0 ${isSidebarOpen ? 'w-full p-3 rounded-2xl' : 'w-10 h-10 rounded-xl p-0'}`}
           >
             <Plus className={`${isSidebarOpen ? 'w-3.5 h-3.5' : 'w-5 h-5'} text-zinc-400 group-hover:text-white transition-colors`} />
             {isSidebarOpen && <span className="font-semibold text-xs whitespace-nowrap">{t('new_project')}</span>}
@@ -359,7 +378,7 @@ export default function AppLayout({
             <div className="w-full h-[1px] bg-white/[0.03] mb-2"></div>
             
             {guidedStage && guidedStage !== 'done' && (
-              <div className="mb-6 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] relative overflow-hidden backdrop-blur-md">
+              <div className="mb-6 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.05] relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-12 h-12 bg-indigo-500/5 blur-xl rounded-full" />
                 <div className="flex items-center gap-2 mb-3 text-[10px] font-bold tracking-[0.2em] uppercase text-indigo-400">
                   <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
@@ -428,7 +447,7 @@ export default function AppLayout({
                     return (
                       <div 
                         key={item.id} 
-                        className={`group relative flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl cursor-pointer transition-all duration-300 ${isActive ? 'bg-white/[0.03] border border-white/[0.05] text-white font-medium shadow-sm' : 'text-zinc-400 hover:text-white hover:bg-white/[0.01] hover:backdrop-blur-sm'}`}
+                        className={`group relative flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl cursor-pointer transition-all duration-300 ${isActive ? 'bg-white/[0.03] border border-white/[0.05] text-white font-medium shadow-sm' : 'text-zinc-400 hover:text-white hover:bg-white/[0.01]'}`}
                         onMouseLeave={() => setActiveItem(null)}
                       >
                         {editingId === item.id ? (
@@ -467,7 +486,7 @@ export default function AppLayout({
 
                         {/* Dropdown Menu */}
                         {activeItem === item.id && (
-                          <div className="absolute right-2 top-9 w-36 bg-[#0A0A0B] backdrop-blur-3xl border border-white/[0.08] shadow-2xl shadow-black/50 rounded-lg p-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+                          <div className="absolute right-2 top-9 w-36 bg-[#0A0A0B] border border-white/[0.08] shadow-2xl shadow-black/50 rounded-lg p-1 z-30 animate-in fade-in zoom-in-95 duration-100">
                             <button onClick={(e) => startEditing(e, item)} className="w-full text-left px-2 py-2 text-xs hover:bg-white/[0.04] rounded-lg flex items-center gap-2 text-zinc-300 hover:text-white transition-all cursor-pointer">
                                <Edit className="w-3.5 h-3.5 text-zinc-400"/> {lang === 'id' ? 'Ubah Nama' : 'Rename'}
                             </button>
@@ -501,7 +520,7 @@ export default function AppLayout({
                   return (
                     <div 
                       key={item.id} 
-                      className={`group relative flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl cursor-pointer transition-all duration-300 ${isActive ? 'bg-white/[0.03] border border-white/[0.05] text-white font-medium shadow-sm' : 'text-zinc-400 hover:text-white hover:bg-white/[0.01] hover:backdrop-blur-sm'}`}
+                      className={`group relative flex items-center justify-between gap-2 p-2 px-2.5 rounded-xl cursor-pointer transition-all duration-300 ${isActive ? 'bg-white/[0.03] border border-white/[0.05] text-white font-medium shadow-sm' : 'text-zinc-400 hover:text-white hover:bg-white/[0.01]'}`}
                       onMouseLeave={() => setActiveItem(null)}
                     >
                       {editingId === item.id ? (
@@ -539,7 +558,7 @@ export default function AppLayout({
 
                       {/* Dropdown Menu */}
                       {activeItem === item.id && (
-                        <div className="absolute right-2 top-9 w-36 bg-[#0A0A0B] backdrop-blur-3xl border border-white/[0.08] shadow-2xl shadow-black/50 rounded-lg p-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+                        <div className="absolute right-2 top-9 w-36 bg-[#0A0A0B] border border-white/[0.08] shadow-2xl shadow-black/50 rounded-lg p-1 z-30 animate-in fade-in zoom-in-95 duration-100">
                           <button onClick={(e) => startEditing(e, item)} className="w-full text-left px-2 py-2 text-xs hover:bg-white/[0.04] rounded-lg flex items-center gap-2 text-zinc-300 hover:text-white transition-all cursor-pointer">
                              <Edit className="w-3.5 h-3.5 text-zinc-400"/> {lang === 'id' ? 'Ubah Nama' : 'Rename'}
                           </button>
@@ -576,7 +595,7 @@ export default function AppLayout({
 
           <div className={`mt-auto pt-4 border-t border-white/[0.03] relative ${!isSidebarOpen ? 'flex justify-center w-full' : 'w-full'}`}>
             {showDropdown && isSidebarOpen && (
-              <div className="absolute bottom-full mb-2 left-0 w-full bg-[#0A0A0B] backdrop-blur-3xl border border-white/[0.08] rounded-lg p-1 shadow-2xl shadow-black/50 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <div className="absolute bottom-full mb-2 left-0 w-full bg-[#0A0A0B] border border-white/[0.08] rounded-lg p-1 shadow-2xl shadow-black/50 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                 <button onClick={() => { setShowDropdown(false); navigate('/settings'); }} className="flex items-center gap-2.5 w-full p-2.5 text-xs text-zinc-400 hover:text-white hover:bg-white/[0.04] rounded-lg text-left transition-all cursor-pointer">
                   <Settings className="w-4 h-4 text-zinc-500" /> {t('settings')}
                 </button>
@@ -607,7 +626,7 @@ export default function AppLayout({
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative group/layout" data-sidebar={isSidebarOpen ? 'open' : 'closed'}>

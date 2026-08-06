@@ -2240,7 +2240,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                               </div>
 
                               {/* Mobile bottom tab bar (md+ hidden) — one panel at a time */}
-                              <div className="md:hidden shrink-0 border-t border-zinc-900 bg-[#09090B]/95 backdrop-blur-2xl flex items-stretch justify-around z-50 pb-[env(safe-area-inset-bottom)]">
+                              <div className="md:hidden shrink-0 border-t border-zinc-900 bg-[#09090B] flex items-stretch justify-around z-50 pb-[env(safe-area-inset-bottom)]">
                                 <button
                                   onClick={() => setMobilePanel('chat')}
                                   className={`flex flex-col items-center justify-center gap-0.5 w-full py-2 transition-colors cursor-pointer ${mobilePanel === 'chat' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
