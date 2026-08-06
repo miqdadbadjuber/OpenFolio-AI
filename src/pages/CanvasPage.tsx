@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '../components/AppLayout';
-import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, AlertTriangle, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase, MessageSquare, Rocket } from 'lucide-react';
+import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, AlertTriangle, Fingerprint, Layers, PenTool, Monitor, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase, MessageSquare, Rocket } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import Markdown from 'react-markdown';
 import { TypingText } from '../components/TypingText';
@@ -1864,43 +1864,25 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                     <p className="text-xs text-zinc-500">Membangun arsitektur, layout, dan modul personal secara realtime.</p>
                                 </div>
 
-                                {/* Cinematic Real-time Modular Build Indicators */}
-                                <div className="flex flex-col gap-3 font-mono text-xs mb-8 relative z-10">
+                                {/* Build steps: minimal, ikon per langkah */}
+                                <div className="flex flex-col gap-1 mb-8 relative z-10">
                                     {[
-                                        { label: "Identity Analysis", threshold: 20 },
-                                        { label: "Portfolio Architecture", threshold: 45 },
-                                        { label: "Visual Composition", threshold: 70 },
-                                        { label: "Content Assembly", threshold: 90 },
-                                        { label: "Final Rendering", threshold: 100 }
+                                        { label: "Analisis Identitas", icon: Fingerprint, threshold: 20 },
+                                        { label: "Arsitektur Portofolio", icon: Layers, threshold: 45 },
+                                        { label: "Komposisi Visual", icon: PenTool, threshold: 70 },
+                                        { label: "Penyusunan Konten", icon: FileText, threshold: 90 },
+                                        { label: "Render Final", icon: Monitor, threshold: 100 }
                                     ].map((step, idx, arr) => {
-                                        const prevThreshold = idx === 0 ? 0 : arr[idx-1]!.threshold;
+                                        const prevThreshold = idx === 0 ? 0 : arr[idx - 1]!.threshold;
                                         const isActive = loadingPct >= prevThreshold && loadingPct < step.threshold;
                                         const isCompleted = loadingPct >= step.threshold;
-                                        
+                                        const StepIcon = step.icon;
                                         return (
-                                            <div key={idx} className={`flex items-center justify-between p-3.5 rounded-xl border transition-all duration-500 ${
-                                                isActive ? 'border-blue-500/50 bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.15)] scale-[1.02]' : 
-                                                isCompleted ? 'border-zinc-800/50 bg-zinc-900/30' : 
-                                                'border-transparent bg-transparent opacity-30'
-                                            }`}>
-                                                 <span className={`${isActive ? 'text-blue-400 font-bold' : isCompleted ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                                                     {step.label}
-                                                 </span>
-                                                 <span>
-                                                     {isCompleted ? (
-                                                         <span className="text-emerald-500 font-bold flex items-center gap-2">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Done
-                                                         </span>
-                                                     ) : isActive ? (
-                                                         <span className="text-blue-400 font-bold flex items-center gap-2 animate-pulse">
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Active
-                                                         </span>
-                                                     ) : (
-                                                         <span className="text-zinc-600 flex items-center gap-2">
-                                                            <div className="w-1 h-1 rounded-full bg-zinc-600" /> Pending
-                                                         </span>
-                                                     )}
-                                                 </span>
+                                            <div key={idx} className="flex items-center gap-3 py-2 transition-opacity duration-500">
+                                                <StepIcon className={`w-4 h-4 shrink-0 ${isActive ? 'text-blue-400' : isCompleted ? 'text-zinc-500' : 'text-zinc-700'}`} />
+                                                <span className={`text-[13px] ${isActive ? 'text-white font-medium' : isCompleted ? 'text-zinc-400' : 'text-zinc-600'}`}>{step.label}</span>
+                                                {isCompleted && <span className="ml-auto text-emerald-500 text-xs leading-none">✓</span>}
+                                                {isActive && <span className="ml-auto w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
                                             </div>
                                         );
                                     })}
