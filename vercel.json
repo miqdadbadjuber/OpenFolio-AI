@@ -1,6 +1,11 @@
 {
-  "buildCommand": "vite build",
+  "buildCommand": "vite build && npm run build:server",
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "dist-server/**"
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }

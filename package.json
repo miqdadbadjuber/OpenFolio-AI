@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "tsx server/dev.ts",
     "build": "vite build",
-    "clean": "rimraf dist build",
+    "build:server": "esbuild server/app.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-server/index.js",
+    "clean": "rimraf dist build dist-server",
     "test": "vitest run",
     "lint": "tsc --noEmit"
   },
