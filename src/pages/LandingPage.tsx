@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Github, Check, X, Eye, Lock, FileText, Cpu, LayoutGrid, type LucideIcon } from "lucide-react";
+import { ArrowRight, Github, Check, X, Eye, Lock, FileText, Cpu, type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
 import Logo from "../components/Logo";
@@ -9,14 +9,14 @@ const GITHUB_URL = "https://github.com/MiqdadBadjuber/OpenFolio-AI";
 const WORKFLOW: Array<{ title: string; desc: string; icon: LucideIcon }> = [
   { title: "Tempel data", desc: "resume / jawab singkat", icon: FileText },
   { title: "AI menyusun", desc: "identitas + konten", icon: Cpu },
-  { title: "Pilih template", desc: "gaya sesuai selera", icon: LayoutGrid },
-  { title: "Review & simpan", desc: "di halaman baru", icon: Eye },
+  { title: "Review hasil", desc: "di halaman baru", icon: Eye },
+  { title: "Simpan & bagikan", desc: "tautan portofolio", icon: Check },
 ];
 
 const COMPARISON: Array<[string, string, string]> = [
   ["Kecepatan", "Detik", "Jam"],
   ["Login", "Tanpa login", "Wajib akun"],
-  ["Template", "Siap pakai", "Mulai dari nol"],
+  ["Template", "Otomatis", "Mulai dari nol"],
   ["Hasil", "HTML/Tailwind bersih", "Bergantung jasa"],
   ["Revisi", "Chat AI", "Manual"],
   ["Biaya", "Gratis", "Mahal"],
@@ -25,7 +25,7 @@ const COMPARISON: Array<[string, string, string]> = [
 const TERMINAL_LINES = [
   "openfolio build --profile engineer",
   "konten disusun oleh AI",
-  "template diterapkan",
+  "layout dirapikan otomatis",
   "portofolio siap — buka di halaman baru",
 ];
 
@@ -95,14 +95,18 @@ export default function LandingPage() {
             className="md:col-span-7 bg-[#131318] border border-white/5 rounded-2xl p-8 md:p-10 flex flex-col justify-center min-h-[280px] md:min-h-[360px] relative overflow-hidden"
           >
             <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] text-[11px] text-zinc-400 font-medium mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Gratis · Tanpa login · Open source
+            </div>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
               Portofolio-mu,{" "}
-              <span className="bg-gradient-to-b from-white via-[#D4D4D8] to-[#71717A] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
                 dikodekan AI.
               </span>
             </h1>
             <p className="text-lg text-zinc-400 max-w-md font-light leading-relaxed mb-8">
-              Tempel data → AI susun → pilih template → review di halaman baru. Tanpa login.
+              Tempel data → AI susun → review di halaman baru. Tanpa login.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link to="/app" className="inline-flex items-center gap-2 bg-white text-black px-7 py-3.5 rounded-xl font-semibold hover:bg-zinc-200 transition-all group">
@@ -161,7 +165,10 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="mb-24"
         >
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-12">Cara Kerja</h2>
+          <div className="flex items-center gap-3 mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Cara Kerja</h2>
+            <span className="text-xs px-2.5 py-1 rounded-full border border-indigo-400/20 bg-indigo-400/10 text-indigo-300 font-medium">Semua otomatis</span>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {WORKFLOW.map((step, i) => {
               const Icon = step.icon;
@@ -187,7 +194,7 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="mb-24"
         >
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-12">Kenapa OpenFolio?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-12">Kenapa <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">OpenFolio</span>?</h2>
           <div className="rounded-2xl border border-white/5 bg-[#0c0c11] overflow-hidden">
             <div className="grid grid-cols-3 border-b border-white/5 bg-[#0a0a0f]">
               <div className="p-3 md:p-6 text-xs md:text-sm text-zinc-400 font-medium">Aspek</div>

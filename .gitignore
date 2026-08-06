@@ -10,3 +10,5 @@ coverage/
 .env*
 !.env.example
 firebase-applet-config.json
+# Laporan audit internal — JANGAN di-push ke GitHub
+report/

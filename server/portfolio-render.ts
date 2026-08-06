@@ -92,8 +92,14 @@ const sanitizeUrl = (url: string) => {
   // Guard for non-string values first: publish/inject accept `z.record(z.any())`, so
   // social/project fields can be numbers/objects — calling `.trim()` would throw a 500.
   if (typeof url !== "string" || !url || url === "#") return "#";
-  const trimmed = url.trim();
+  let trimmed = url.trim();
   if (/["'<>`\s]/.test(trimmed)) return "#";
+  // Bila user mengetik URL tanpa protokol (misal "github.com/user"), tambahkan https://
+  // supaya link social tetap tampil. URL dengan skema berbahaya (data:, javascript:)
+  // tetap tertolak di blok protokol di bawah.
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
+    trimmed = "https://" + trimmed;
+  }
   try {
     const parsed = new URL(trimmed);
     if (parsed.protocol === "https:" || parsed.protocol === "http:") return escapeHTML(trimmed);
@@ -168,7 +174,17 @@ export const sanitizePortfolioData = (raw: any) => {
     show_navbar: typeof l.show_navbar === 'boolean' ? l.show_navbar : true
   };
 
-  clean.navbar = d.navbar || null;
+  // Navbar sekarang dirender ke HTML (name_text dipakai sebagai brand), jadi seluruh
+  // field harus di-escape dulu sebelum dipakai di template.
+  if (d.navbar && typeof d.navbar === 'object') {
+    clean.navbar = {
+      enabled: typeof d.navbar.enabled === 'boolean' ? d.navbar.enabled : true,
+      items: Array.isArray(d.navbar.items) ? d.navbar.items.filter((i: any) => typeof i === 'string').map(escapeHTML) : [],
+      name_text: escapeHTML(typeof d.navbar.name_text === 'string' ? d.navbar.name_text : "")
+    };
+  } else {
+    clean.navbar = null;
+  }
 
   // Socials
   const s = d.socials || {};
@@ -347,24 +363,28 @@ export const sanitizePortfolioData = (raw: any) => {
     const renderNavbar = () => {
       const isNavbarEnabled = data.navbar && typeof data.navbar.enabled === 'boolean' ? data.navbar.enabled : layout.show_navbar;
       if (!isNavbarEnabled) return '';
-      
+
+      // Brand navbar memakai nama custom yang diinput user di onboarding (name_text),
+      // bukan nama di hero. Kalau tidak ada, baru pakai nama default.
+      const navbarBrand = (data.navbar?.name_text && data.navbar.name_text.trim()) ? data.navbar.name_text : name;
+
       let navItems = [];
       if (data.about_paragraph_1) navItems.push({ label: 'Tentang', id: 'tentang' });
       if (data.career && data.career.length > 0) navItems.push({ label: 'Karier', id: 'karier' });
       if (data.projects && data.projects.length > 0) navItems.push({ label: 'Proyek', id: 'proyek' });
       if (data.skills && data.skills.length > 0) navItems.push({ label: 'Skill', id: 'skill' });
       if (data.contact_email || data.contact_location || Object.keys(socials).length > 0) navItems.push({ label: 'Kontak', id: 'kontak' });
-      
+
       if (data.navbar && Array.isArray(data.navbar.items)) {
           navItems = navItems.filter(item => data.navbar.items.includes(item.label));
       }
-      
+
       return `
         <nav class="fixed top-0 left-0 right-0 z-[100] px-4 py-4 md:px-12 pointer-events-none">
           <div class="max-w-[1200px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center ${style.navBg} backdrop-blur-xl border ${style.border} rounded-[20px] md:rounded-full px-6 md:px-8 py-3.5 md:py-3.5 pointer-events-auto shadow-sm gap-3 md:gap-0">
             <div class="w-full md:w-auto flex justify-between items-center">
               <div class="font-medium tracking-tight text-sm ${style.navText}">
-                 <a href="#hero" class="hover:opacity-70 transition-opacity">${name}</a>
+                 <a href="#hero" class="hover:opacity-70 transition-opacity">${navbarBrand}</a>
               </div>
               <div class="md:hidden flex items-center gap-4">
                 <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-sm animate-pulse"></div>
@@ -578,7 +598,12 @@ export const sanitizePortfolioData = (raw: any) => {
       });
 
       const hasContactData = contactItems.length > 0;
-      
+
+      // Kalimat ajakan menyesuaikan profesi user (point review #3) — bukan teks template.
+      const contactIntro = role
+        ? `Terbuka untuk diskusi dan kolaborasi seputar ${role.toLowerCase()}, serta peluang yang relevan.`
+        : 'Terbuka untuk diskusi, kolaborasi, dan peluang baru.';
+
       return `
         ${hasContactData ? `
         <section id="kontak" class="${s.py} px-6 md:px-16 lg:px-24 mx-auto max-w-[1240px] border-t ${style.border}">
@@ -586,7 +611,7 @@ export const sanitizePortfolioData = (raw: any) => {
                <div class="flex flex-col space-y-6 md:sticky md:top-32">
                    <h2 class="${t.h1} ${style.heading}">Mari Terhubung.</h2>
                    <p class="text-base md:text-lg ${style.text} opacity-70 leading-relaxed max-w-md">
-                      Terbuka untuk diskusi seputar portofolio, pengembangan produk digital, web development, dan kolaborasi teknologi.
+                      ${contactIntro}
                    </p>
                </div>
                <div class="flex flex-col space-y-10 md:pt-2 animate-reveal stagger-1">

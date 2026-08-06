@@ -163,9 +163,11 @@ async function startServer() {
     const templateName = template || "obsidian";
     const name = structured?.fullName || "";
     const role = structured?.role || "";
-    const bio = structured?.bio || "";
-    const skillsList = Array.isArray(structured?.skills) 
-      ? structured.skills 
+    // Client mengirim `about` (bukan `bio`) — baca keduanya supaya isi "About You"
+    // tidak hilang saat generate jatuh ke fallback (point review #5).
+    const bio = structured?.about || structured?.bio || "";
+    const skillsList = Array.isArray(structured?.skills)
+      ? structured.skills
       : (typeof structured?.skills === 'string' ? structured.skills.split(',').map((s: string) => s.trim()) : []);
     
     let projectsArray: any[] = [];
@@ -243,10 +245,12 @@ async function startServer() {
       contact_email: (structured?.contacts?.email && structured?.contacts?.email !== "hello@example.com") ? structured.contacts.email : "",
       contact_location: structured?.contacts?.location || "",
       stats: [],
+      // Normalisasi: setiap item skill bisa berupa {name, description} (dari form) atau
+      // string. Ambil `.name` kalau objek, jangan render objek mentah jadi [object Object].
       skills: skillsList.length > 0 ? [
         {
-          "title": "Skill Utama",
-          "items": skillsList,
+          "title": "Keahlian",
+          "items": skillsList.map((s: any) => typeof s === 'string' ? s : (s?.name || s?.title || "")).filter((s: string) => s.length > 0),
           "visual_weight": 8
         }
       ] : [],
@@ -543,7 +547,34 @@ ${conversationText}`;
         if (!dataJson.role && structuredData?.role) {
             dataJson.role = structuredData.role;
         }
-        
+
+        // Preserve kontak/socials yang diisi user bila AI menghilangkannya (point review #4).
+        // AI kadang hanya mengembalikan email dan membuang github/linkedin, atau mengembalikan
+        // URL tanpa protokol yang lalu ditolak sanitizer.
+        const srcContacts = structuredData?.contacts;
+        if (srcContacts && typeof srcContacts === 'object') {
+          if (!dataJson.socials || typeof dataJson.socials !== 'object') {
+            dataJson.socials = {};
+          }
+          (['linkedin', 'github', 'website', 'twitter', 'instagram', 'whatsapp', 'x', 'dribbble'] as const).forEach((key) => {
+            const val = srcContacts[key];
+            if (typeof val === 'string' && val.trim() && !dataJson.socials[key]) {
+              dataJson.socials[key] = val.trim();
+            }
+          });
+          if ((!dataJson.contact_email || dataJson.contact_email === "") && typeof srcContacts.email === 'string') {
+            dataJson.contact_email = srcContacts.email;
+          }
+          if (!dataJson.contact_location && typeof srcContacts.location === 'string') {
+            dataJson.contact_location = srcContacts.location;
+          }
+        }
+
+        // Preserve "about" ke about_paragraph_1 bila AI tidak mengisinya (point review #5).
+        if ((!dataJson.about_paragraph_1 || dataJson.about_paragraph_1 === "") && structuredData?.about) {
+          dataJson.about_paragraph_1 = structuredData.about;
+        }
+
         // If it's still missing vital parts after parsing, verify it has name
         if (!dataJson || (!dataJson.name && !dataJson.role)) {
              throw new Error("Parsed JSON missing identity data.");
@@ -664,30 +695,37 @@ Format JSON:
       console.log("[EDIT PIPELINE] Gemini response", response.text.substring(0, 500) + "...");
 
       const parsed = safeParseJSON(response.text);
-      if (!parsed || !parsed.data) {
-         throw new Error("Respon AI tidak valid atau tidak memiliki object 'data'.");
+      // Gemini kadang mengembalikan portofolio polos tanpa wrapper { explanation, data }.
+      // Kalau tidak ada `.data` tapi punya `.name` (tanda ini portofolio utuh), terima langsung.
+      let editData: any;
+      if (parsed && parsed.data && typeof parsed.data === 'object' && !Array.isArray(parsed.data)) {
+        editData = parsed.data;
+      } else if (parsed && parsed.name) {
+        editData = parsed;
+      } else {
+        throw new Error("Respon AI tidak valid atau tidak memiliki object 'data'.");
       }
-      
+
       let finalData = { ...currentData };
       const isObject = (item: any) => (item && typeof item === 'object' && !Array.isArray(item));
-      for (const key in parsed.data) {
+      for (const key in editData) {
           if (key === 'career' || key === 'projects') continue; // Handled below
-          if (isObject(parsed.data[key]) && isObject(finalData[key])) {
-              finalData[key] = { ...finalData[key], ...parsed.data[key] };
+          if (isObject(editData[key]) && isObject(finalData[key])) {
+              finalData[key] = { ...finalData[key], ...editData[key] };
           } else {
-              finalData[key] = parsed.data[key];
+              finalData[key] = editData[key];
           }
       }
 
       // --- PROJECT SMART MERGE FIX ---
-      if (parsed.data.projects !== undefined) {
-          if (!Array.isArray(parsed.data.projects) && isObject(parsed.data.projects)) {
+      if (editData.projects !== undefined) {
+          if (!Array.isArray(editData.projects) && isObject(editData.projects)) {
               // Jika Gemini mengembalikan object tunggal (kesalahan umum delta), ubah menjadi array lalu merge
-              let inc = parsed.data.projects;
+              let inc = editData.projects;
               let mergedProjects = Array.isArray(currentData.projects) ? [...currentData.projects] : [];
               const titleMatch = inc?.title || inc?.name;
               if (titleMatch) {
-                  const exists = mergedProjects.find((p:any) => 
+                  const exists = mergedProjects.find((p:any) =>
                       (p.title && p.title.toLowerCase() === titleMatch.toLowerCase()) ||
                       (p.name && p.name.toLowerCase() === titleMatch.toLowerCase())
                   );
@@ -698,27 +736,27 @@ Format JSON:
                   }
               }
               finalData.projects = mergedProjects;
-          } else if (Array.isArray(parsed.data.projects)) {
+          } else if (Array.isArray(editData.projects)) {
               // Percaya pada Array penuh dari Gemini agar operasi Delete / Rename bisa berjalan
-              finalData.projects = parsed.data.projects;
+              finalData.projects = editData.projects;
           }
       }
 
       // --- CAREER ADDITION MERGE FIX ---
-      if (parsed.data.career !== undefined) {
-          let incomingCareer = parsed.data.career;
+      if (editData.career !== undefined) {
+          let incomingCareer = editData.career;
           if (isObject(incomingCareer)) incomingCareer = [incomingCareer];
-          
+
           if (Array.isArray(incomingCareer)) {
               let mergedCareer = Array.isArray(currentData.career) ? [...currentData.career] : [];
               for (const inc of incomingCareer) {
                   if (!inc || (!inc.role && !inc.company)) continue;
-                  
-                  const exists = mergedCareer.find((c:any) => 
-                      (c.role && c.role === inc.role) || 
+
+                  const exists = mergedCareer.find((c:any) =>
+                      (c.role && c.role === inc.role) ||
                       (c.company && c.company === inc.company)
                   );
-                  
+
                   if (!exists) {
                       mergedCareer.push(inc);
                   } else {

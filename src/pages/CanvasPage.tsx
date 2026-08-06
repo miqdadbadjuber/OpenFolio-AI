@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '../components/AppLayout';
-import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, Lock, AlertTriangle, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase, MessageSquare, Rocket } from 'lucide-react';
+import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, AlertTriangle, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase, MessageSquare, Rocket } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import Markdown from 'react-markdown';
 import { TypingText } from '../components/TypingText';
@@ -437,7 +437,8 @@ export default function CanvasPage() {
     const [editorBio, setEditorBio] = useState('');
     const [editorEmail, setEditorEmail] = useState('');
     const [editorAccent, setEditorAccent] = useState('#C9A84C');
-    const [safeMode, setSafeMode] = useState(false);
+    // Safe render mode sekarang wajib selalu aktif (point review #6) — bukan toggle.
+    const safeMode = true;
     const [isPublishing, setIsPublishing] = useState(false);
 
     const handleDevBypass = async () => {
@@ -1827,35 +1828,6 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                         <div className="flex bg-white/[0.02] border border-white/[0.05] rounded-2xl overflow-hidden focus-within:border-indigo-500/50 transition-colors">
                                             <div className="px-5 py-4 border-r border-white/[0.05] bg-white/[0.01] text-zinc-500 flex items-center justify-center"><Github className="w-4 h-4" /></div>
                                             <input type="text" value={contactInfo.github} onChange={(e) => setContactInfo(prev => ({ ...prev, github: e.target.value }))} placeholder="GitHub URL" className="w-full bg-transparent px-5 py-4 text-sm text-white placeholder-zinc-700 outline-none" />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="space-y-4 pt-6 border-t border-white/5 relative z-10">
-                                        <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg transition-colors ${safeMode ? 'bg-indigo-500/20' : 'bg-white/5'}`}>
-                                                    <Lock className={`w-4 h-4 transition-colors ${safeMode ? 'text-indigo-400' : 'text-zinc-500'}`} />
-                                                </div>
-                                                <div className="text-left">
-                                                    <p className="text-[10px] font-bold text-white uppercase tracking-wider">Safe Render Mode</p>
-                                                    <p className="text-[9px] text-zinc-500">Mencegah AI menggunakan layout ekstrem yang tidak stabil.</p>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    const nextSafe = !safeMode;
-                                                    setSafeMode(nextSafe);
-                                                    if (portfolioData) {
-                                                        handleDirectUpdate({ safe_mode: nextSafe });
-                                                    }
-                                                }}
-                                                className={`w-12 h-6 rounded-full transition-all relative ${safeMode ? 'bg-indigo-600' : 'bg-zinc-800'}`}
-                                            >
-                                                <motion.div 
-                                                    animate={{ x: safeMode ? 24 : 2 }} 
-                                                    className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
-                                                />
-                                            </button>
                                         </div>
                                     </div>
                                     

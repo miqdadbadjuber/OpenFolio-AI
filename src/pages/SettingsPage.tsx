@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../components/AppLayout';
-import { Globe, Palette, Database, Info, Gem } from 'lucide-react';
+import { Globe, Palette, Database, Info, Gem, Trash2, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../lib/LanguageContext';
 import { useTheme } from '../lib/ThemeContext';
 import { auth, db } from '../lib/firebase';
 import { collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { getQuota, remaining, QuotaLimits, QuotaSnapshot } from '../lib/UsageService';
+import { showToast } from '../lib/notify';
 import Logo from '../components/Logo';
 
 export default function SettingsPage() {
@@ -17,11 +18,21 @@ export default function SettingsPage() {
 
   // Data Privacy Confirmation States
   const [deletePortfolioConfirm, setDeletePortfolioConfirm] = useState('');
+  // Konfirmasi hapus pakai modal custom (bukan alert browser, point review #11)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Quota states
   const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, lastResetDate: '' });
-  
+
   const [resetTimer, setResetTimer] = useState('');
+
+  // Tanggal pembaruan terakhir = tanggal sekarang (bukan hardcode, point review #10)
+  const lastUpdated = new Date().toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   useEffect(() => {
     const updateTimer = () => {
@@ -47,23 +58,25 @@ export default function SettingsPage() {
     return unsub;
   }, []);
 
+  // Konfirmasi hapus via modal custom + toast (bukan confirm/alert browser, point review #11)
   const handleDeleteAllPortfolios = async () => {
     if (!auth?.currentUser || !db) return;
-    
-    if (confirm('Apakah benar kamu ingin menghapus semua portofolio kamu? Tindakan ini tidak dapat dibatalkan.')) {
-      try {
-        const q = query(collection(db, 'portfolios'), where('userId', '==', auth.currentUser.uid));
-        const snapshot = await getDocs(q);
-        const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
-        await Promise.all(deletePromises);
-        alert('Semua portofolio berhasil dihapus.');
-        setDeletePortfolioConfirm('');
-      } catch (err: any) {
-        if (err.code !== 'permission-denied' && !err.message.includes('permission')) {
-          console.error(err);
-        }
-        alert('Gagal menghapus portofolio.');
+
+    try {
+      const q = query(collection(db, 'portfolios'), where('userId', '==', auth.currentUser.uid));
+      const snapshot = await getDocs(q);
+      const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
+      await Promise.all(deletePromises);
+      setDeletePortfolioConfirm('');
+      showToast('Semua portofolio berhasil dihapus.');
+    } catch (err: any) {
+      if (err.code !== 'permission-denied' && !err.message.includes('permission')) {
+        console.error(err);
       }
+      showToast('Gagal menghapus portofolio.');
+    } finally {
+      setIsDeleting(false);
+      setConfirmDeleteOpen(false);
     }
   };
 
@@ -169,10 +182,10 @@ export default function SettingsPage() {
                   <ul className="text-xs space-y-2.5 text-[var(--text-secondary)] font-medium">
                     <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>AI Portofolio Builder</span></li>
                     <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>Portofolio Profesional Klasik</span></li>
-                    <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>Edit dan Update Tanpa Batas</span></li>
+                    <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>Revisi Konten via Chat AI</span></li>
                     <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>Publish Portofolio Online</span></li>
-                    <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>Sinkronisasi Akun</span></li>
                     <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>Riwayat Portofolio</span></li>
+                    <li className="flex items-start gap-2"><span className="text-[#8b85a1] font-bold">✓</span><span>Data Tersimpan Otomatis</span></li>
                   </ul>
                 </div>
 
@@ -214,7 +227,7 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                   <p className="text-[11px] text-[var(--text-secondary)]">Ketik <strong className="text-[var(--text-primary)]">HAPUS</strong> untuk mengonfirmasi.</p>
                   <input type="text" className="input text-xs w-full max-w-xs" placeholder="Ketik HAPUS" value={deletePortfolioConfirm} onChange={e => setDeletePortfolioConfirm(e.target.value)} />
-                  <button onClick={handleDeleteAllPortfolios} disabled={deletePortfolioConfirm !== 'HAPUS'} className="btn-danger block text-xs px-5 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed">Hapus Semua</button>
+                  <button onClick={() => setConfirmDeleteOpen(true)} disabled={deletePortfolioConfirm !== 'HAPUS'} className="btn-danger block text-xs px-5 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"><Trash2 className="w-3.5 h-3.5" /> Hapus Semua</button>
                 </div>
               </div>
               
@@ -246,8 +259,8 @@ export default function SettingsPage() {
                 <span className="text-xs font-semibold text-[var(--text-primary)]">Miqdad Badjuber</span>
               </div>
               <div className="flex justify-between items-center p-4">
-                <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wider uppercase">{lang === 'id' ? 'Pembaruan Terakhir' : 'Released On'}</span>
-                <span className="text-xs font-semibold text-[var(--text-primary)]">26 Mei 2026</span>
+                <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wider uppercase">{lang === 'id' ? 'Pembaruan Terakhir' : 'Last Updated'}</span>
+                <span className="text-xs font-semibold text-[var(--text-primary)]">{lastUpdated}</span>
               </div>
               <div className="p-4 bg-zinc-950/20 text-center text-[10px] text-[var(--text-secondary)]">
                 © 2026 Miqdad Badjuber. All rights reserved.
@@ -260,17 +273,17 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8 relative">
-          
-          <button 
-            onClick={() => navigate(-1)} 
+      <div className="h-full overflow-y-auto p-4 md:p-8">
+        <div className="max-w-4xl flex flex-col md:flex-row gap-8 relative">
+
+          <button
+            onClick={() => navigate(-1)}
             className="md:absolute -top-12 left-0 flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-4 md:mb-0"
           >
             <span className="text-lg leading-none">&larr;</span> {t('back' as any) || (lang === 'id' ? 'Kembali' : 'Back')}
           </button>
-          
-          <div className="w-full md:w-64 flex-shrink-0 space-y-1 md:mt-0">
+
+          <div className="w-full md:w-64 flex-shrink-0 space-y-1 md:mt-0 md:sticky md:top-0 self-start">
             <button onClick={() => setActiveTab('language')} className={`w-full flex items-center gap-3 p-2 rounded-[var(--radius-sm)] text-sm transition-colors ${activeTab === 'language' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}>
               <Globe className="w-4 h-4" /> {t('language')}
             </button>
@@ -290,11 +303,47 @@ export default function SettingsPage() {
             </button>
           </div>
           
-          <div className="flex-1 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl p-6 md:p-8">
+          <div className="flex-1 min-w-0 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl p-6 md:p-8">
             {renderContent()}
           </div>
         </div>
       </div>
+
+      {/* Modal konfirmasi hapus (ganti confirm() browser, point review #11) */}
+      {confirmDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isDeleting && setConfirmDeleteOpen(false)}></div>
+          <div className="relative w-full max-w-sm bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 flex-shrink-0 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-[var(--error)]" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-[var(--text-primary)]">{lang === 'id' ? 'Hapus semua portofolio?' : 'Delete all portfolios?'}</h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed mt-1">
+                  {lang === 'id' ? 'Tindakan ini menghapus seluruh portofolio kamu secara permanen dan tidak dapat dibatalkan.' : 'This permanently deletes all of your portfolios. This action cannot be undone.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setConfirmDeleteOpen(false)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors disabled:opacity-50"
+              >
+                {lang === 'id' ? 'Batal' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleDeleteAllPortfolios}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? (lang === 'id' ? 'Menghapus…' : 'Deleting…') : (lang === 'id' ? 'Hapus Semua' : 'Delete All')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

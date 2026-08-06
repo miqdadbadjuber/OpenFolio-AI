@@ -56,4 +56,24 @@ describe("sanitizePortfolioData", () => {
     expect(out.projects[0].image_url).toBe("#");
     expect(out.socials.github).toBe("#");
   });
+  it("menambahkan https:// untuk URL social tanpa protokol (point review #4)", () => {
+    const out = sanitizePortfolioData({
+      socials: { github: "github.com/ilham", linkedin: "https://linkedin.com/in/ilham" },
+    });
+    expect(out.socials.github).toBe("https://github.com/ilham");
+    expect(out.socials.linkedin).toBe("https://linkedin.com/in/ilham");
+  });
+  it("menjaga protokol berbahaya tetap ditolak meski tanpa protokol", () => {
+    const out = sanitizePortfolioData({ socials: { website: "javascript:alert(1)" } });
+    expect(out.socials.website).toBe("#");
+  });
+  it("navbar di-escape dan name_text disimpan (point review #1)", () => {
+    const out = sanitizePortfolioData({
+      name: "Nama Asli",
+      navbar: { enabled: true, items: ["Tentang"], name_text: "<b>Brand</b>" },
+    });
+    expect(out.navbar.name_text).toBe("&lt;b&gt;Brand&lt;/b&gt;");
+    expect(out.navbar.enabled).toBe(true);
+    expect(out.navbar.items).toEqual(["Tentang"]);
+  });
 });
