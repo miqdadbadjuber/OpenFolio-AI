@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, AlertTriangle, Fingerprint, Layers, PenTool, Monitor, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase, MessageSquare, Rocket } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router';
@@ -1231,14 +1231,14 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
         }
     };
 
-    const scrollChatToBottom = () => {
+    const scrollChatToBottom = useCallback(() => {
         chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
-    };
+    }, [chatScrollRef]);
 
     // Auto-scroll chat saat daftar pesan atau status editing berubah.
     useEffect(() => {
         scrollChatToBottom();
-    }, [workspaceMessages, isEditingPortfolio]);
+    }, [workspaceMessages, isEditingPortfolio, scrollChatToBottom]);
 
     // Publish flow (Step 5): write the public snapshot via the server endpoint (Task 7).
     // The private draft stays in `portfolios/{docId}` (merge) — only publish goes through the server.
