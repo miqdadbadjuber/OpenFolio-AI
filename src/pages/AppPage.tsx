@@ -23,8 +23,8 @@ export default function AppPage() {
     <AppLayout>
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-[var(--bg-base)]">
         {/* Cinematic Backdrop Glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none"></div>
-        <div className="absolute top-1/3 left-1/3 w-[300px] h-[300px] rounded-full bg-violet-500/5 blur-[100px] pointer-events-none"></div>
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(closest-side,rgba(99,102,241,0.06),transparent)] pointer-events-none"></div>
+        <div className="absolute top-1/3 left-1/3 w-[300px] h-[300px] rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.06),transparent)] pointer-events-none"></div>
 
         <div className="max-w-3xl w-full text-center space-y-12 relative z-10 my-auto pb-10">
           {/* Animated App Icon Header */}

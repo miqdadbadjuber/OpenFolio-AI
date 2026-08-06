@@ -1271,7 +1271,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                 initial={{ opacity: 0, y: -10 }} 
                                 animate={{ opacity: 1, y: 0 }} 
                                 exit={{ opacity: 0 }}
-                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-mono font-medium uppercase tracking-wider backdrop-blur-md shadow-md"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-mono font-medium uppercase tracking-wider shadow-md"
                             >
                                 <span>✓</span>
                                 <span>Progress berhasil dipulihkan</span>
@@ -1304,7 +1304,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 z-[200] bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center p-8"
+                            className="absolute inset-0 z-[200] bg-black/60 flex flex-col items-center justify-center p-8"
                         >
                             <Loader2 className="w-8 h-8 text-white animate-spin mb-4" />
                             <span className="text-white font-mono text-sm tracking-widest uppercase">Mengunggah Gambar...</span>
@@ -1325,7 +1325,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                             <div className="min-h-full flex flex-col items-center py-20 px-6 max-sm:px-4">
                                 <div className="max-w-xl w-full z-10 flex flex-col items-center text-center space-y-12 m-auto shrink-0">
                                     <motion.div variants={itemVariants} className="space-y-4">
-                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest backdrop-blur-md shadow-sm">
+                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest shadow-sm">
                                         <LayoutPanelLeft className="w-3 h-3" />
                                         <span>Section 0 — Komposisi Navigasi</span>
                                     </div>
@@ -1405,7 +1405,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         <motion.div key="hero" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 overflow-y-auto no-scrollbar">
                             <div className="max-w-2xl w-full z-10 space-y-12">
                                 <motion.div variants={itemVariants} className="space-y-4 text-center">
-                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest backdrop-blur-md shadow-sm">
+                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest shadow-sm">
                                         <UserIcon className="w-3 h-3" />
                                         <span>Section 1 — Identitas Utama</span>
                                     </div>
@@ -1413,7 +1413,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                 </motion.div>
 
                                 <motion.div variants={itemVariants} className="space-y-8">
-                                    <div className="flex flex-col md:flex-row items-center gap-8 bg-white/[0.02] backdrop-blur-md border border-white/[0.05] p-8 md:p-10 rounded-2xl overflow-hidden shadow-xl shadow-black/10 relative">
+                                    <div className="flex flex-col md:flex-row items-center gap-8 bg-white/[0.02] border border-white/[0.05] p-8 md:p-10 rounded-2xl overflow-hidden shadow-xl shadow-black/10 relative">
                                         <div className="relative group shrink-0">
                                             <input 
                                                 type="file" 
@@ -1503,7 +1503,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         <motion.div key="about" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 overflow-y-auto no-scrollbar">
                             <div className="max-w-2xl w-full z-10 space-y-12">
                                 <motion.div variants={itemVariants} className="space-y-4 text-center">
-                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest backdrop-blur-md shadow-sm">
+                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest shadow-sm">
                                         <FileText className="w-3 h-3" />
                                         <span>Section 2 — Tentang</span>
                                     </div>
@@ -1516,7 +1516,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                         value={aboutText}
                                         onChange={e => setAboutText(e.target.value)}
                                         placeholder="Saya adalah seseorang yang sangat memperhatikan detail visual..."
-                                        className="w-full bg-white/[0.02] backdrop-blur-md shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 md:p-10 text-xl text-white outline-none focus:border-white/20 focus:bg-white/[0.03] transition-all min-h-[220px] resize-none leading-relaxed placeholder-zinc-700 relative z-10"
+                                        className="w-full bg-white/[0.02] shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 md:p-10 text-xl text-white outline-none focus:border-white/20 focus:bg-white/[0.03] transition-all min-h-[220px] resize-none leading-relaxed placeholder-zinc-700 relative z-10"
                                     />
                                     <div className="mt-4 flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest text-zinc-600">
                                         
@@ -1539,7 +1539,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         <motion.div key="skills" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-50 flex flex-col items-center justify-start p-8 md:p-20 overflow-y-auto no-scrollbar">
                             <div className="max-w-4xl w-full z-10 space-y-16">
                                 <motion.div variants={itemVariants} className="space-y-4 text-center">
-                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest backdrop-blur-md shadow-sm">
+                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest shadow-sm">
                                         <Code className="w-3 h-3" />
                                         <span>Section 3 — Skill</span>
                                     </div>
@@ -1549,7 +1549,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
                                 <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {skillsList.map(skill => (
-                                        <div key={skill.id} className="bg-white/[0.02] backdrop-blur-md shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 group hover:border-white/10 hover:bg-white/[0.03] transition-all relative overflow-hidden">
+                                        <div key={skill.id} className="bg-white/[0.02] shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 group hover:border-white/10 hover:bg-white/[0.03] transition-all relative overflow-hidden">
                                             <button 
                                                 onClick={() => setSkillsList(prev => prev.filter(s => s.id !== skill.id))}
                                                 className="absolute top-4 right-4 text-zinc-600 hover:text-red-400 p-2 transition-colors z-10"
@@ -1607,7 +1607,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         <motion.div key="projects" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-50 flex flex-col items-center justify-start p-8 md:p-20 overflow-y-auto no-scrollbar">
                             <div className="max-w-5xl w-full z-10 space-y-16">
                                 <motion.div variants={itemVariants} className="space-y-4 text-center">
-                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest backdrop-blur-md shadow-sm">
+                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest shadow-sm">
                                         <Eye className="w-3 h-3" />
                                         <span>Section 4 — Arsitektur Proyek</span>
                                     </div>
@@ -1623,7 +1623,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
                                 <motion.div variants={itemVariants} className="space-y-12">
                                     {structuredProjects.map((proj, index) => (
-                                        <div key={proj.id} className="relative group bg-white/[0.02] backdrop-blur-md shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 md:p-12 transition-all hover:bg-white/[0.03] hover:border-white/10 overflow-hidden">
+                                        <div key={proj.id} className="relative group bg-white/[0.02] shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 md:p-12 transition-all hover:bg-white/[0.03] hover:border-white/10 overflow-hidden">
                                             <button onClick={() => setStructuredProjects(prev => prev.filter(p => p.id !== proj.id))} className="absolute top-8 right-8 text-zinc-600 hover:text-red-400 p-2 transition-colors z-10 hover:bg-red-500/10 rounded-full"><X className="w-5 h-5" /></button>
                                             <div className="flex flex-col lg:flex-row gap-12 relative z-10">
                                                 <div className="w-full lg:w-2/5 space-y-6">
@@ -1640,7 +1640,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                                 <span className="text-[10px] text-zinc-600 mt-3 font-medium tracking-wide">Format JPG, PNG • Maks. 2 MB</span>
                                                             </div>
                                                         )}
-                                                        <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center opacity-0 hover:opacity-100 bg-black/60 backdrop-blur-sm transition-opacity">
+                                                        <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center opacity-0 hover:opacity-100 bg-black/60 transition-opacity">
                                                             <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                                                                 const file = e.target.files?.[0];
                                                                 if (file) {
@@ -1722,7 +1722,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         <motion.div key="career" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-50 flex flex-col items-center justify-start p-8 md:p-20 overflow-y-auto no-scrollbar">
                             <div className="max-w-4xl w-full z-10 space-y-16">
                                 <motion.div variants={itemVariants} className="space-y-4 text-center">
-                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest backdrop-blur-md shadow-sm">
+                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 font-medium text-[11px] uppercase tracking-widest shadow-sm">
                                         <Briefcase className="w-3 h-3" />
                                         <span>Section 5 — Riwayat Karier</span>
                                     </div>
@@ -1732,7 +1732,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
                                 <motion.div variants={itemVariants} className="space-y-6 relative z-50">
                                     {careerTimeline.map((item, i) => (
-                                        <div key={item.id} style={{ zIndex: 100 - i }} className="relative group bg-white/[0.02] backdrop-blur-md shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 md:p-10 transition-all hover:bg-white/[0.03] hover:border-white/10">
+                                        <div key={item.id} style={{ zIndex: 100 - i }} className="relative group bg-white/[0.02] shadow-xl shadow-black/10 border border-white/[0.05] rounded-2xl p-8 md:p-10 transition-all hover:bg-white/[0.03] hover:border-white/10">
                                             <button onClick={() => setCareerTimeline(prev => prev.filter(i => i.id !== item.id))} className="absolute top-8 right-8 text-zinc-600 hover:text-red-400 transition-colors z-10 hover:bg-red-500/10 rounded-full p-1"><X className="w-5 h-5" /></button>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
                                                 <div className="space-y-4">
@@ -1806,7 +1806,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                         <motion.div key="contact" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 md:p-12 overflow-y-auto no-scrollbar select-none">
                             <div className="max-w-2xl w-full z-10 flex flex-col items-center text-center space-y-10 my-auto py-10">
                                 <motion.div variants={itemVariants} className="space-y-4">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 backdrop-blur-md mx-auto shadow-sm">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-zinc-400 mx-auto shadow-sm">
                                         <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse"></div>
                                         <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{lang === 'id' ? 'Sentuhan Akhir' : 'Final Touch'}</span>
                                     </div>
@@ -1814,7 +1814,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                     <p className="text-zinc-500 text-sm max-w-lg mx-auto font-light leading-relaxed">{lang === 'id' ? 'Hubungkan dunia dengan karya Anda.' : 'Connect the world with your work.'}</p>
                                 </motion.div>
 
-                                <motion.div variants={itemVariants} className="w-full max-w-lg space-y-4 bg-white/[0.02] backdrop-blur-md border border-white/[0.05] shadow-xl shadow-black/10 rounded-2xl p-8 relative overflow-hidden">
+                                <motion.div variants={itemVariants} className="w-full max-w-lg space-y-4 bg-white/[0.02] border border-white/[0.05] shadow-xl shadow-black/10 rounded-2xl p-8 relative overflow-hidden">
                                     <div className="space-y-4 relative z-10">
                                         <div className="flex bg-white/[0.02] border border-white/[0.05] rounded-2xl overflow-hidden focus-within:border-indigo-500/50 transition-colors">
                                             <div className="px-5 py-4 border-r border-white/[0.05] bg-white/[0.01] text-zinc-500 flex items-center justify-center"><Mail className="w-4 h-4" /></div>
@@ -1945,7 +1945,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                     </div>
                                     
                                     {/* Window Title Bar */}
-                                    <div className="h-6 md:h-8 w-full bg-zinc-900/80 backdrop-blur border-b border-white/5 flex items-center px-4 gap-1.5 z-10 shrink-0">
+                                    <div className="h-6 md:h-8 w-full bg-zinc-900/80 border-b border-white/5 flex items-center px-4 gap-1.5 z-10 shrink-0">
                                         <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F56] border border-[#E0443E]" />
                                         <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
                                         <div className="w-2.5 h-2.5 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
@@ -1962,7 +1962,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                 sandbox="allow-scripts"
                                             />
                                         ) : (
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-zinc-950/80 backdrop-blur-sm z-10 animate-in fade-in duration-500">
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-zinc-950/80 z-10 animate-in fade-in duration-500">
                                                 {/* Progress Ring */}
                                                 <div className="relative flex items-center justify-center mb-10 md:mb-16 scale-90 md:scale-100">
                                                     <svg className="w-24 h-24 transform -rotate-90">
@@ -2074,7 +2074,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                          <div className={`px-4 py-3 text-[13px] leading-relaxed shadow-sm ${
                                                              msg.role === 'user' 
                                                              ? 'text-zinc-100 rounded-2xl rounded-tr-sm border font-medium' 
-                                                             : 'bg-zinc-900 border border-zinc-800/60 shadow-sm text-zinc-300 rounded-2xl rounded-tl-sm prose prose-invert prose-p:leading-relaxed prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800/80 backdrop-blur-sm'
+                                                             : 'bg-zinc-900 border border-zinc-800/60 shadow-sm text-zinc-300 rounded-2xl rounded-tl-sm prose prose-invert prose-p:leading-relaxed prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800/80'
                                                          }`}
                                                          style={msg.role === 'user' ? { backgroundColor: '#1C1C21', borderColor: 'rgba(255,255,255,0.06)' } : {}}>
                                                              {msg.role === 'user' ? (
@@ -2097,7 +2097,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                                  OpenFolio
                                                              </span>
                                                          </div>
-                                                         <div className="px-5 py-4 bg-zinc-900 border border-zinc-800/60 backdrop-blur-sm rounded-2xl rounded-tl-sm shadow-sm flex items-center justify-center min-w-[60px]">
+                                                         <div className="px-5 py-4 bg-zinc-900 border border-zinc-800/60 rounded-2xl rounded-tl-sm shadow-sm flex items-center justify-center min-w-[60px]">
                                                              <div className="flex items-center gap-1.5">
                                                                  <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                                                                  <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
