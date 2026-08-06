@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import React, { useState, useEffect, useRef } from 'react';
 import AppLayout from '../components/AppLayout';
-import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, Lock, AlertTriangle, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase } from 'lucide-react';
+import { Send, Upload, UploadCloud, ArrowRight, User as UserIcon, RotateCcw, Paintbrush, Edit3, Download, Share2, Plus, Mic, LayoutPanelLeft, Code, Eye, Copy, X, Workflow, Blocks, Zap, ChevronDown, Lock, AlertTriangle, FileText, Globe, Github, Mail, Linkedin, Loader2, Briefcase, MessageSquare, Rocket } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import Markdown from 'react-markdown';
 import { TypingText } from '../components/TypingText';
@@ -428,6 +428,8 @@ export default function CanvasPage() {
     const [revisionInstruction, setRevisionInstruction] = useState('');
     const [skippedPhoto, setSkippedPhoto] = useState(false);
     const [activeView, setActiveView] = useState<'preview' | 'code'>('preview');
+    // Mobile: show chat OR preview one at a time (mirrors DiagramPilot bottom-tab pattern).
+    const [mobilePanel, setMobilePanel] = useState<'chat' | 'preview'>('preview');
 
     // -- EDITOR STATES --
     const [editorName, setEditorName] = useState('');
@@ -2039,13 +2041,13 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                     </div>
                                 </div>
                                 <div className="flex gap-3 items-center">
-                                     <button 
+                                     <button
                                        onClick={() => {
                                          const blob = new Blob([htmlContent], { type: 'text/html' });
                                          const url = URL.createObjectURL(blob);
                                          window.open(url, '_blank');
                                        }}
-                                       className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/10 text-white rounded-xl text-xs font-bold tracking-wide transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95"
+                                       className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center gap-2 cursor-pointer active:scale-95"
                                      >
                                         <Eye className="w-3.5 h-3.5" /> {lang === 'id' ? 'Buka Tab Baru' : 'Launch Live'}
                                      </button>
@@ -2056,7 +2058,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                               <div className="flex-1 bg-zinc-950 flex flex-col lg:flex-row relative overflow-hidden h-full w-full">
                                  
                                  {/* LEFT COLUMN: Chat OpenFolio AI (Unified Assistant Interface) */}
-                                 <div className="w-full lg:w-[420px] border-b lg:border-b-0 lg:border-r border-zinc-900 flex flex-col shrink-0 h-[450px] lg:h-full relative overflow-hidden bg-[#0A0A0C]">
+                                 <div className={`w-full lg:w-[420px] border-b lg:border-b-0 lg:border-r border-zinc-900 flex-col flex-1 lg:flex-none lg:shrink-0 lg:h-full relative overflow-hidden bg-[#0A0A0C] ${mobilePanel === 'chat' ? 'flex' : 'hidden'} lg:flex`}>
                                      
                                      {/* Timeline message feeds */}          {/* Timeline message feeds */}
                                      <div className="flex-grow overflow-y-auto p-5 scroll-smooth no-scrollbar">
@@ -2132,7 +2134,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                  </div>
 
                                  {/* RIGHT COLUMN: Portfolio Preview Canvas with unified Bottom Action Bar */}
-                                 <div className="flex-grow flex flex-col h-full bg-zinc-950 relative overflow-hidden">
+                                 <div className={`flex-grow flex-col h-full bg-zinc-950 relative overflow-hidden ${mobilePanel === 'preview' ? 'flex' : 'hidden'} lg:flex`}>
                                      
                                      {/* Portfolio Stage viewport */}
                                      <div className="flex-grow w-full relative h-full bg-zinc-950 flex flex-col overflow-y-auto no-scrollbar justify-center items-center p-4">
@@ -2140,14 +2142,15 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                              <div className="absolute inset-0 w-full h-full bg-zinc-950 p-6 flex flex-col font-mono text-zinc-300 text-xs overflow-auto select-text no-scrollbar animate-in fade-in duration-300">
                                                  <div className="flex justify-between items-center pb-4 border-b border-zinc-900 mb-4 shrink-0 select-none">
                                                      <span className="text-zinc-500 text-[10px] tracking-wider uppercase font-sans font-bold">KODE SUMBER OUTPUT PORTOFOLIO (HTML/CSS)</span>
-                                                     <button 
+                                                     <button
                                                          onClick={() => {
                                                              navigator.clipboard.writeText(htmlContent);
                                                              alert(lang === 'id' ? "Kode berhasil disalin ke clipboard!" : "Code copied successfully!");
                                                          }}
-                                                         className="px-2.5 py-1 text-[10px] rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all font-sans font-bold cursor-pointer"
+                                                         title={lang === 'id' ? 'Salin kode' : 'Copy code'}
+                                                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white transition-all font-sans cursor-pointer"
                                                      >
-                                                         Salin Kode
+                                                         <Copy className="w-3.5 h-3.5" />
                                                      </button>
                                                  </div>
                                                  <pre className="flex-1 w-full overflow-auto select-text font-mono text-zinc-400 bg-black/40 p-4 rounded-xl border border-zinc-900/40 text-left whitespace-pre-wrap leading-relaxed">
@@ -2174,7 +2177,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                      </div>
 
                                      {/* Bottom Control Bar under Right Canvas column */}
-                                     <div className="h-16 shrink-0 border-t border-zinc-900 bg-[#080809] flex items-center justify-between px-6 select-none z-10 w-full">
+                                     <div className="min-h-16 shrink-0 border-t border-zinc-900 bg-[#080809] flex items-center justify-between px-3 md:px-6 select-none z-10 w-full gap-2 flex-wrap md:flex-nowrap py-2 md:py-0">
                                           {/* Mode Selectors */}
                                           <div className="flex gap-2 items-center">
                                               <button 
@@ -2207,9 +2210,9 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                               <button
                                                   onClick={handlePublish}
                                                   disabled={isPublishing || !portfolioData}
-                                                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.25)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                                               >
-                                                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
+                                                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Rocket className="w-3.5 h-3.5" />}
                                                   <span>{isPublishing ? (lang === 'id' ? 'Mempublikasikan...' : 'Publishing...') : (lang === 'id' ? 'Publikasikan' : 'Publish')}</span>
                                               </button>
 
@@ -2234,6 +2237,24 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
                                  </div>
 
+                              </div>
+
+                              {/* Mobile bottom tab bar (md+ hidden) — one panel at a time */}
+                              <div className="md:hidden shrink-0 border-t border-zinc-900 bg-[#09090B]/95 backdrop-blur-2xl flex items-stretch justify-around z-50 pb-[env(safe-area-inset-bottom)]">
+                                <button
+                                  onClick={() => setMobilePanel('chat')}
+                                  className={`flex flex-col items-center justify-center gap-0.5 w-full py-2 transition-colors cursor-pointer ${mobilePanel === 'chat' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                  <MessageSquare className="w-5 h-5" />
+                                  <span className="text-[10px] font-medium tracking-wide">{lang === 'id' ? 'Obrolan' : 'Chat'}</span>
+                                </button>
+                                <button
+                                  onClick={() => setMobilePanel('preview')}
+                                  className={`flex flex-col items-center justify-center gap-0.5 w-full py-2 transition-colors cursor-pointer ${mobilePanel === 'preview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                  <Eye className="w-5 h-5" />
+                                  <span className="text-[10px] font-medium tracking-wide">{lang === 'id' ? 'Pratinjau' : 'Preview'}</span>
+                                </button>
                               </div>
                           </motion.div>
                     ) : null}

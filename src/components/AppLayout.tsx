@@ -28,7 +28,11 @@ export default function AppLayout({
   onboardingProfession?: string,
   guidedStage?: string
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!defaultClosed);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    // Mobile: sidebar starts closed (it's a drawer, not a fixed column).
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    return isMobile ? false : !defaultClosed;
+  });
   const [user, setUser] = useState<User | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
@@ -280,19 +284,25 @@ export default function AppLayout({
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
-      <motion.div 
+      {/* Mobile drawer backdrop (md+ hidden) */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-[190] bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — desktop: collapsible column; mobile: full-height drawer */}
+      <motion.div
         initial={{ width: isSidebarOpen ? 260 : 72 }}
         animate={{ width: isSidebarOpen ? 260 : 72 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         onClick={() => {
            if (!isSidebarOpen) setIsSidebarOpen(true);
         }}
-        className={`flex flex-col bg-[#050506]/90 backdrop-blur-3xl border-r border-white-[0.02] border-r-white/[0.02] h-full overflow-hidden shrink-0 select-none will-change-transform z-[150] ${
-            false 
-            ? `absolute left-0 top-0 bottom-0 ${isSidebarOpen ? 'shadow-[20px_0_50px_rgba(0,0,0,0.85)]' : ''}` 
-            : 'relative transition-shadow duration-300'
-        } ${!isSidebarOpen ? 'cursor-pointer hover:bg-[#080809]' : ''}`}
+        className={`flex flex-col bg-[#050506]/90 backdrop-blur-3xl border-r border-white-[0.02] border-r-white/[0.02] h-full overflow-hidden shrink-0 select-none will-change-transform z-[200] md:z-[150] fixed inset-y-0 left-0 md:relative md:inset-auto transition-transform duration-300 ease-out md:transition-none ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 ${!isSidebarOpen ? 'cursor-pointer hover:bg-[#080809]' : ''}`}
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(30,58,138,0.03),transparent_70%)] pointer-events-none" />
         <div className={`pt-5 pb-4 h-full flex flex-col relative z-10 select-none transition-all duration-300 ${isSidebarOpen ? 'w-[260px] px-4' : 'w-[72px] px-0 items-center'}`}>
@@ -601,7 +611,24 @@ export default function AppLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative group/layout" data-sidebar={isSidebarOpen ? 'open' : 'closed'}>
-        {children}
+        {/* Mobile top bar (md+ hidden) — hamburger opens the sidebar drawer */}
+        <div className="md:hidden flex items-center justify-between px-3 h-12 shrink-0 bg-[#080809] border-b border-zinc-900 relative z-[160]">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer"
+            aria-label={lang === 'id' ? 'Buka menu' : 'Open menu'}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+            <Logo size={20} variant="gradient" />
+            <span className="text-sm font-semibold tracking-tight text-white">{t('openfolio_ai')}</span>
+          </div>
+          <div className="w-8" aria-hidden="true" />
+        </div>
+        <div className="flex-1 min-h-0 relative">
+          {children}
+        </div>
       </div>
 
       <ToastHost />
