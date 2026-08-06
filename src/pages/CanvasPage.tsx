@@ -1890,11 +1890,24 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center text-xs">
-                                        <span className="text-zinc-500">Penyelarasan Sistem</span>
-                                        <span className="text-white font-bold">{loadingPct}%</span>
+                                        <span className="text-zinc-500">{loadingPct === 95 ? 'Menyiapkan hasil akhir…' : 'Penyelarasan Sistem'}</span>
+                                        {loadingPct === 95 ? (
+                                            <span className="text-zinc-500 animate-pulse">masih bekerja…</span>
+                                        ) : (
+                                            <span className="text-white font-bold">{loadingPct}%</span>
+                                        )}
                                     </div>
                                     <div className="h-1 w-full bg-zinc-900 overflow-hidden rounded-full relative">
-                                        <motion.div className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" initial={{ width: 0 }} animate={{ width: `${loadingPct}%` }} transition={{ ease: "circOut", duration: 0.1 }} />
+                                        {loadingPct === 95 ? (
+                                            <motion.div
+                                                className="absolute inset-y-0 w-1/3 rounded-full bg-blue-500/70"
+                                                initial={{ x: '-100%' }}
+                                                animate={{ x: '300%' }}
+                                                transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+                                            />
+                                        ) : (
+                                            <motion.div className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" initial={{ width: 0 }} animate={{ width: `${loadingPct}%` }} transition={{ ease: 'circOut', duration: 0.1 }} />
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1939,7 +1952,9 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                         <circle cx="48" cy="48" r="45" stroke="currentColor" strokeWidth="3" strokeLinecap="round" fill="transparent" strokeDasharray="283" strokeDashoffset={283 - (283 * Math.max(2, loadingPct)) / 100} className="text-blue-500 transition-all duration-300 ease-out drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
                                                     </svg>
                                                     <div className="absolute flex flex-col items-center justify-center">
-                                                        <span className="text-xl md:text-2xl font-bold text-white tracking-tighter">{loadingPct}%</span>
+                                                        <span className={`text-xl md:text-2xl font-bold text-white tracking-tighter ${loadingPct === 95 ? 'animate-pulse' : ''}`}>
+                                                            {loadingPct === 95 ? '…' : `${loadingPct}%`}
+                                                        </span>
                                                     </div>
                                                 </div>
 
