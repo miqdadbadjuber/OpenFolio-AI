@@ -268,6 +268,9 @@ export default function CanvasPage() {
     const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
     const [htmlContent, setHtmlContent] = useState<string>('');
     const [workspaceMessages, setWorkspaceMessages] = useState<Array<{ role: string; content: string }>>([]);
+    // Pesan AI terakhir yang baru dibuat (untuk animasi ketik). Null = tidak ada yang animasi (mis. hasil restore).
+    const [lastTypedContent, setLastTypedContent] = useState<string | null>(null);
+    const chatScrollRef = useRef<HTMLDivElement>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, lastResetDate: '' });
 
@@ -1027,6 +1030,8 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                 }
             ];
 
+            setLastTypedContent(finalMessages[finalMessages.length - 1]!.content);
+
             setPortfolioData(generatedData);
             setHtmlContent(injectedHtml);
 
@@ -1161,6 +1166,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                 ...updatedHistory,
                 { role: 'assistant', content: responseData.explanation || "Perubahan visual berhasil diterapkan ke dalam struktur portal." }
             ];
+            setLastTypedContent(responseData.explanation || "Perubahan visual berhasil diterapkan ke dalam struktur portal.");
             setWorkspaceMessages(finalMessages);
 
             if (user && db) {
@@ -1224,6 +1230,15 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             setIsEditingPortfolio(false);
         }
     };
+
+    const scrollChatToBottom = () => {
+        chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' });
+    };
+
+    // Auto-scroll chat saat daftar pesan atau status editing berubah.
+    useEffect(() => {
+        scrollChatToBottom();
+    }, [workspaceMessages, isEditingPortfolio]);
 
     // Publish flow (Step 5): write the public snapshot via the server endpoint (Task 7).
     // The private draft stays in `portfolios/{docId}` (merge) — only publish goes through the server.
@@ -2033,49 +2048,46 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                  <div className={`w-full lg:w-[420px] border-b lg:border-b-0 lg:border-r border-zinc-900 flex-col flex-1 lg:flex-none lg:shrink-0 lg:h-full relative overflow-hidden bg-[#0A0A0C] ${mobilePanel === 'chat' ? 'flex' : 'hidden'} lg:flex`}>
                                      
                                      {/* Timeline message feeds */}          {/* Timeline message feeds */}
-                                     <div className="flex-grow overflow-y-auto p-5 scroll-smooth no-scrollbar">
+                                     <div className="flex-grow overflow-y-auto p-5 scroll-smooth no-scrollbar" ref={chatScrollRef}>
                                          <div className="flex flex-col space-y-6 pb-2">
-                                             {workspaceMessages.map((msg, idx) => (
-                                                 <div key={idx} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                     <div className={`flex flex-col gap-1.5 max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                                         <div className="flex items-center gap-2 px-1">
-                                                             <span className="text-[10px] font-semibold tracking-wide text-zinc-500 uppercase">
-                                                                 {msg.role === 'user' ? 'Anda' : 'OpenFolio'}
-                                                             </span>
-                                                         </div>
-                                                         <div className={`px-4 py-3 text-[13px] leading-relaxed shadow-sm ${
-                                                             msg.role === 'user' 
-                                                             ? 'text-zinc-100 rounded-2xl rounded-tr-sm border font-medium' 
-                                                             : 'bg-zinc-900 border border-zinc-800/60 shadow-sm text-zinc-300 rounded-2xl rounded-tl-sm prose prose-invert prose-p:leading-relaxed prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800/80'
-                                                         }`}
-                                                         style={msg.role === 'user' ? { backgroundColor: '#1C1C21', borderColor: 'rgba(255,255,255,0.06)' } : {}}>
-                                                             {msg.role === 'user' ? (
-                                                                 msg.content
-                                                             ) : (
-                                                                 <div className="markdown-body text-[13px]">
+                                             {workspaceMessages.map((msg, idx) => {
+                                                 const isAi = msg.role !== 'user';
+                                                 const isLast = idx === workspaceMessages.length - 1;
+                                                 const shouldType = isAi && isLast && lastTypedContent !== null && msg.content === lastTypedContent;
+                                                 return (
+                                                     <div key={idx} className={`flex w-full ${isAi ? 'justify-start' : 'justify-end'}`}>
+                                                         <div className={`flex flex-col gap-1.5 max-w-[85%] ${isAi ? 'items-start' : 'items-end'}`}>
+                                                             {isAi && <Logo variant="white" size={14} />}
+                                                             {shouldType ? (
+                                                                 <TypingText
+                                                                     text={msg.content}
+                                                                     showCursor
+                                                                     speed={15}
+                                                                     onComplete={scrollChatToBottom}
+                                                                     className="text-[13px] text-zinc-300"
+                                                                 />
+                                                             ) : isAi ? (
+                                                                 <div className="markdown-body text-[13px] text-zinc-300 leading-relaxed">
                                                                      <Markdown>{msg.content}</Markdown>
                                                                  </div>
+                                                             ) : (
+                                                                 <div className="text-[13px] leading-relaxed text-zinc-100">{msg.content}</div>
                                                              )}
                                                          </div>
                                                      </div>
-                                                 </div>
-                                             ))}
+                                                 );
+                                             })}
 
                                              {isEditingPortfolio && (
                                                  <div className="flex w-full justify-start animate-in fade-in duration-300">
-                                                     <div className="flex flex-col gap-1.5 max-w-[85%] items-start">
-                                                         <div className="flex items-center gap-2 px-1">
-                                                             <span className="text-[10px] font-semibold tracking-wide text-zinc-500 uppercase">
-                                                                 OpenFolio
-                                                             </span>
-                                                         </div>
-                                                         <div className="px-5 py-4 bg-zinc-900 border border-zinc-800/60 rounded-2xl rounded-tl-sm shadow-sm flex items-center justify-center min-w-[60px]">
-                                                             <div className="flex items-center gap-1.5">
-                                                                 <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                                 <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                                 <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                                             </div>
-                                                         </div>
+                                                     <div className="flex items-center gap-2 pl-0.5">
+                                                         <Logo variant="white" size={14} />
+                                                         <span className="text-[12px] text-zinc-500">Sedang memikirkan</span>
+                                                         <span className="flex items-center gap-1">
+                                                             <span className="w-1 h-1 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '0ms' }} />
+                                                             <span className="w-1 h-1 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '150ms' }} />
+                                                             <span className="w-1 h-1 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '300ms' }} />
+                                                         </span>
                                                      </div>
                                                  </div>
                                              )}
