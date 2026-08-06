@@ -95,10 +95,6 @@ export default function LandingPage() {
             className="md:col-span-7 bg-[#131318] border border-white/5 rounded-2xl p-8 md:p-10 flex flex-col justify-center min-h-[280px] md:min-h-[360px] relative overflow-hidden"
           >
             <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] text-[11px] text-zinc-400 font-medium mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Gratis · Tanpa login · Open source
-            </div>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-6">
               Portofolio-mu,{" "}
               <span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
@@ -167,7 +163,7 @@ export default function LandingPage() {
         >
           <div className="flex items-center gap-3 mb-12">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Cara Kerja</h2>
-            <span className="text-xs px-2.5 py-1 rounded-full border border-indigo-400/20 bg-indigo-400/10 text-indigo-300 font-medium">Semua otomatis</span>
+            <span className="font-mono text-xs text-zinc-600 select-none">// {WORKFLOW.length} langkah, otomatis</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {WORKFLOW.map((step, i) => {

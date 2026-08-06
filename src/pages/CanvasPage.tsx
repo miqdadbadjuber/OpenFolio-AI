@@ -1860,7 +1860,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                 <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none"><Logo size={140} variant="gradient" /></div>
                                 
                                 <div className="space-y-1 mb-8 relative z-10">
-                                    <h2 className="text-2xl font-light text-white tracking-tight">Merakit Portofolio...</h2>
+                                    <h2 className="text-2xl font-bold text-white tracking-tight">Merakit Portofolio...</h2>
                                     <p className="text-xs text-zinc-500">Membangun arsitektur, layout, dan modul personal secara realtime.</p>
                                 </div>
 
@@ -1903,7 +1903,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                 className="absolute inset-y-0 w-1/3 rounded-full bg-blue-500/70"
                                                 initial={{ x: '-100%' }}
                                                 animate={{ x: '300%' }}
-                                                transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+                                                transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
                                             />
                                         ) : (
                                             <motion.div className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" initial={{ width: 0 }} animate={{ width: `${loadingPct}%` }} transition={{ ease: 'circOut', duration: 0.1 }} />
@@ -2053,23 +2053,25 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                  const shouldType = isAi && isLast && lastTypedContent !== null && msg.content === lastTypedContent;
                                                  return (
                                                      <div key={idx} className={`flex w-full ${isAi ? 'justify-start' : 'justify-end'}`}>
-                                                         <div className={`flex flex-col gap-1.5 max-w-[85%] ${isAi ? 'items-start' : 'items-end'}`}>
-                                                             {isAi && <Logo variant="white" size={14} />}
-                                                             {shouldType ? (
-                                                                 <TypingText
-                                                                     text={msg.content}
-                                                                     showCursor
-                                                                     speed={15}
-                                                                     onComplete={scrollChatToBottom}
-                                                                     className="text-[13px] text-zinc-300"
-                                                                 />
-                                                             ) : isAi ? (
-                                                                 <div className="markdown-body text-[13px] text-zinc-300 leading-relaxed">
-                                                                     <Markdown>{msg.content}</Markdown>
-                                                                 </div>
-                                                             ) : (
-                                                                 <div className="text-[13px] leading-relaxed text-zinc-100">{msg.content}</div>
-                                                             )}
+                                                         <div className={`flex items-start gap-2.5 max-w-[85%] ${isAi ? 'flex-row' : 'flex-row-reverse'}`}>
+                                                             {isAi && <Logo variant="white" size={16} className="mt-1 shrink-0" />}
+                                                             <div className={`flex flex-col gap-1.5 min-w-0 ${isAi ? 'items-start' : 'items-end'}`}>
+                                                                 {shouldType ? (
+                                                                     <TypingText
+                                                                         text={msg.content}
+                                                                         showCursor
+                                                                         speed={15}
+                                                                         onComplete={scrollChatToBottom}
+                                                                         className="text-[13px] text-zinc-300"
+                                                                     />
+                                                                 ) : isAi ? (
+                                                                     <div className="markdown-body text-[13px] text-zinc-300 leading-relaxed">
+                                                                         <Markdown>{msg.content}</Markdown>
+                                                                     </div>
+                                                                 ) : (
+                                                                     <div className="text-[13px] leading-relaxed text-zinc-100">{msg.content}</div>
+                                                                 )}
+                                                             </div>
                                                          </div>
                                                      </div>
                                                  );
@@ -2077,14 +2079,21 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
                                              {isEditingPortfolio && (
                                                  <div className="flex w-full justify-start animate-in fade-in duration-300">
-                                                     <div className="flex items-center gap-2 pl-0.5">
-                                                         <Logo variant="white" size={14} />
-                                                         <span className="text-[12px] text-zinc-500">Sedang memikirkan</span>
-                                                         <span className="flex items-center gap-1">
-                                                             <span className="w-1 h-1 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '0ms' }} />
-                                                             <span className="w-1 h-1 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '150ms' }} />
-                                                             <span className="w-1 h-1 rounded-full bg-zinc-500 animate-pulse" style={{ animationDelay: '300ms' }} />
-                                                         </span>
+                                                     <div className="flex items-start gap-2.5 pl-0.5">
+                                                         <Logo variant="white" size={16} className="mt-0.5 shrink-0" />
+                                                         <div className="flex items-center gap-2 pt-0.5">
+                                                             <span className="text-[12px] text-zinc-500">Sedang memikirkan</span>
+                                                             <span className="flex items-center gap-1">
+                                                                 {[0, 150, 300].map((delay) => (
+                                                                     <motion.span
+                                                                         key={delay}
+                                                                         className="w-1 h-1 rounded-full bg-zinc-400"
+                                                                         animate={{ opacity: [0.2, 1, 0.2], scale: [0.75, 1, 0.75] }}
+                                                                         transition={{ duration: 1.2, repeat: Infinity, delay: delay / 1000, ease: 'easeInOut' }}
+                                                                     />
+                                                                 ))}
+                                                             </span>
+                                                         </div>
                                                      </div>
                                                  </div>
                                              )}
