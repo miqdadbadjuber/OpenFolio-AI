@@ -2054,7 +2054,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                  return (
                                                      <div key={idx} className={`flex w-full ${isAi ? 'justify-start' : 'justify-end'}`}>
                                                          <div className={`flex items-start gap-2.5 max-w-[85%] ${isAi ? 'flex-row' : 'flex-row-reverse'}`}>
-                                                             {isAi && <Logo variant="white" size={16} className="mt-1 shrink-0" />}
+                                                             {isAi && <Logo variant="white" size={20} className="mt-0.5 shrink-0" />}
                                                              <div className={`flex flex-col gap-1.5 min-w-0 ${isAi ? 'items-start' : 'items-end'}`}>
                                                                  {shouldType ? (
                                                                      <TypingText
@@ -2069,7 +2069,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                                          <Markdown>{msg.content}</Markdown>
                                                                      </div>
                                                                  ) : (
-                                                                     <div className="text-[13px] leading-relaxed text-zinc-100">{msg.content}</div>
+                                                                     <div className="px-3.5 py-2 rounded-2xl rounded-br-md bg-zinc-800 text-[13px] leading-relaxed text-zinc-100 break-words">{msg.content}</div>
                                                                  )}
                                                              </div>
                                                          </div>
@@ -2080,7 +2080,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                              {isEditingPortfolio && (
                                                  <div className="flex w-full justify-start animate-in fade-in duration-300">
                                                      <div className="flex items-start gap-2.5 pl-0.5">
-                                                         <Logo variant="white" size={16} className="mt-0.5 shrink-0" />
+                                                         <Logo variant="white" size={20} className="mt-0.5 shrink-0" />
                                                          <div className="flex items-center gap-2 pt-0.5">
                                                              <span className="text-[12px] text-zinc-500">Sedang memikirkan</span>
                                                              <span className="flex items-center gap-1">
