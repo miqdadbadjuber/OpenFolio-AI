@@ -7,9 +7,10 @@ interface TypingTextProps {
   onComplete?: () => void;
   skip?: boolean;
   className?: string;
+  showCursor?: boolean;
 }
 
-export const TypingText: React.FC<TypingTextProps> = ({ text, speed = 15, onComplete, skip = false, className }) => {
+export const TypingText: React.FC<TypingTextProps> = ({ text, speed = 15, onComplete, skip = false, className, showCursor = false }) => {
   const [displayedText, setDisplayedText] = useState(skip ? text : '');
   const [currentIndex, setCurrentIndex] = useState(skip ? text.length : 0);
   const textRef = useRef(text);
@@ -47,9 +48,12 @@ export const TypingText: React.FC<TypingTextProps> = ({ text, speed = 15, onComp
     }
   }, [currentIndex, text, speed, onComplete, skip]);
 
+  const isTyping = currentIndex < text.length;
+  const displayed = showCursor && isTyping ? `${displayedText} ▍` : displayedText;
+
   return (
     <div className={`markdown-body prose prose-invert max-w-none text-sm prose-p:leading-relaxed ${className || ''}`}>
-      <Markdown>{displayedText}</Markdown>
+      <Markdown>{displayed}</Markdown>
     </div>
   );
 };
