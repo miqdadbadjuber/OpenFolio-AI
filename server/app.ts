@@ -12,6 +12,7 @@ import os from "os";
 import rateLimit from "express-rate-limit";
 import { getFirestore } from "firebase-admin/firestore";
 import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
+import { applyEditDelta } from "./edit-merge";
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
 import type { z } from "zod";
@@ -632,16 +633,20 @@ ${conversationText}`;
       }
 
       const prompt = `Kamu adalah OpenFolio Identity Editor.
-Tugasmu adalah memodifikasi data portofolio JSON agar sesuai dengan instruksi revisi user tanpa merusak Schema Identity Behavior.
+Tugasmu adalah menerapkan instruksi revisi user pada data portofolio JSON.
 
-⚠️ ZERO FICTION POLICY & ATURAN REVISI:
-1. DILARANG MERUSAK SCHEMA: Simpan struktur bersarang (nested structure) persis sama.
-2. DILARANG BERHALUSINASI: Jangan tambahkan data fiksi. Pelihara kebenaran data (TRUTH-PRESERVING).
-3. PENGHAPUSAN: Jika user meminta penghapusan, kosongkan data dengan null, "", atau [].
-4. BAHASA: Gunakan bahasa kasual profesional di 'explanation'.
-5. WAJIB FULL JSON: Kembalikan KESELURUHAN (FULL) struktur JSON portofolio. Jangan hanya mengembalikan bagian yang berubah. Sertakan kembali data yang tidak berubah agar tidak hilang!
+⚠️ ATURAN DELTA (KEMBALIKAN HANYA YANG BERUBAH):
+1. JANGAN menyalin/mengembalikan seluruh portofolio. Kembalikan HANYA field yang kamu ubah.
+2. Field yang tidak kamu sentuh = JANGAN dikirim (server akan mempertahankan nilainya).
+3. SELALU sertakan "name" (nilai persis dari data saat ini) di dalam "data".
+4. PENGHAPUSAN: Jika user minta menghapus field, kirim null, "", atau [].
+5. Untuk array projects, career, skills, stats:
+   - Menambah ATAU mengubah satu item = kembalikan SATU object item saja (bukan array).
+   - Menghapus atau menamai ulang item = kembalikan ARRAY penuh yang sudah diperbarui.
+6. DILARANG BERHALUSINASI (ZERO FICTION): Jangan tambahkan data fiksi. Pelihara kebenaran data (TRUTH-PRESERVING).
+7. BAHASA: Gunakan bahasa kasual profesional di 'explanation'.
 
-⚠️ OBJECT JSON PORTOFOLIO SAAT INI:
+⚠️ OBJECT JSON PORTOFOLIO SAAT INI (konteks saja — JANGAN disalin ke respons):
 ${JSON.stringify(cleanCurrentData, null, 2)}
 
 INSTRUKSI REVISI USER:
@@ -650,7 +655,7 @@ INSTRUKSI REVISI USER:
 Format JSON:
 {
   "explanation": "string",
-  "data": { ... seluruh object portofolio secara lengkap (FULL KESELURUHAN) termasuk yang dimodifikasi ... }
+  "data": { "name": "...", ... hanya field yang berubah ... }
 }`;
       console.log("[EDIT PIPELINE] Prompt generated");
 
@@ -710,66 +715,7 @@ Format JSON:
         throw new Error("Respon AI tidak valid atau tidak memiliki object 'data'.");
       }
 
-      let finalData = { ...currentData };
-      const isObject = (item: any) => (item && typeof item === 'object' && !Array.isArray(item));
-      for (const key in editData) {
-          if (key === 'career' || key === 'projects') continue; // Handled below
-          if (isObject(editData[key]) && isObject(finalData[key])) {
-              finalData[key] = { ...finalData[key], ...editData[key] };
-          } else {
-              finalData[key] = editData[key];
-          }
-      }
-
-      // --- PROJECT SMART MERGE FIX ---
-      if (editData.projects !== undefined) {
-          if (!Array.isArray(editData.projects) && isObject(editData.projects)) {
-              // Jika Gemini mengembalikan object tunggal (kesalahan umum delta), ubah menjadi array lalu merge
-              let inc = editData.projects;
-              let mergedProjects = Array.isArray(currentData.projects) ? [...currentData.projects] : [];
-              const titleMatch = inc?.title || inc?.name;
-              if (titleMatch) {
-                  const exists = mergedProjects.find((p:any) =>
-                      (p.title && p.title.toLowerCase() === titleMatch.toLowerCase()) ||
-                      (p.name && p.name.toLowerCase() === titleMatch.toLowerCase())
-                  );
-                  if (exists) {
-                      Object.assign(exists, inc);
-                  } else {
-                      mergedProjects.push({ ...inc, title: titleMatch });
-                  }
-              }
-              finalData.projects = mergedProjects;
-          } else if (Array.isArray(editData.projects)) {
-              // Percaya pada Array penuh dari Gemini agar operasi Delete / Rename bisa berjalan
-              finalData.projects = editData.projects;
-          }
-      }
-
-      // --- CAREER ADDITION MERGE FIX ---
-      if (editData.career !== undefined) {
-          let incomingCareer = editData.career;
-          if (isObject(incomingCareer)) incomingCareer = [incomingCareer];
-
-          if (Array.isArray(incomingCareer)) {
-              let mergedCareer = Array.isArray(currentData.career) ? [...currentData.career] : [];
-              for (const inc of incomingCareer) {
-                  if (!inc || (!inc.role && !inc.company)) continue;
-
-                  const exists = mergedCareer.find((c:any) =>
-                      (c.role && c.role === inc.role) ||
-                      (c.company && c.company === inc.company)
-                  );
-
-                  if (!exists) {
-                      mergedCareer.push(inc);
-                  } else {
-                      Object.assign(exists, inc);
-                  }
-              }
-              finalData.career = mergedCareer;
-          }
-      }
+      let finalData = applyEditDelta(currentData, editData);
 
       // Preserve image URLs
       if (currentData.hero_image_url && (!finalData.hero_image_url || finalData.hero_image_url === "")) {
