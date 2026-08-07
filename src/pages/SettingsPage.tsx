@@ -238,7 +238,7 @@ export default function SettingsPage() {
                 <span className="text-xs font-semibold text-[var(--text-primary)]">OpenFolio AI</span>
               </div>
               <div className="flex justify-between items-center p-4">
-                <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wider uppercase">{lang === 'id' ? 'Versi Studio' : 'Build Edition'}</span>
+                <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wider uppercase">{lang === 'id' ? '.env' : 'Build Edition'}</span>
                 <span className="text-xs font-semibold text-[var(--text-primary)]">1.0.0</span>
               </div>
               <div className="flex justify-between items-center p-4">
