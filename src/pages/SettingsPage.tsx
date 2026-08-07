@@ -241,7 +241,7 @@ export default function SettingsPage() {
               <Logo size={36} variant="gradient" />
               <div>
                 <h3 className="text-lg font-semibold tracking-tight text-white">OpenFolio AI</h3>
-                <p className="text-xs text-[var(--text-secondary)]">{lang === 'id' ? 'Platform Ideasi Portofolio Berbasis AI Terarah' : 'AI-Directed Creative Portfolio Synthesizer'}</p>
+                <p className="text-xs text-[var(--text-secondary)]">{lang === 'id' ? 'Platform Ideasi Portofolio Berbasis AI' : 'AI-Directed Creative Portfolio Synthesizer'}</p>
               </div>
             </div>
             
@@ -252,7 +252,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex justify-between items-center p-4">
                 <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wider uppercase">{lang === 'id' ? 'Versi Studio' : 'Build Edition'}</span>
-                <span className="text-xs font-semibold text-[var(--text-primary)]">1.0.0</span>
+                <span className="text-xs font-semibold text-[var(--text-primary)]">1.0.1</span>
               </div>
               <div className="flex justify-between items-center p-4">
                 <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wider uppercase">Developer</span>
