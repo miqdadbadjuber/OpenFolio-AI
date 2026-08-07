@@ -1131,54 +1131,63 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
 
             const responseData = await res.json();
             const updatedData = responseData.data;
-            if (!updatedData || !updatedData.name) {
-                throw new Error("Respon data tidak valid atau terpotong. Perubahan dibatalkan untuk melindungi portofolio Anda.");
+
+            // Dua jenis balasan AI:
+            // 1) EDIT — ada "data" lengkap (berisi name) → terapkan + render ulang.
+            // 2) CHAT — hanya "explanation" (jawaban/penolakan) → tampilkan di percakapan,
+            //           visual tidak berubah.
+            let finalHtml: string | null = null;
+            let persistedContent = portfolioData as any;
+            let portfolioName = (portfolioData as any)?.name ? `${(portfolioData as any).name} Portfolio` : 'Workspace Kreatif ✨';
+
+            if (updatedData && updatedData.name) {
+                console.log("[EDIT PIPELINE] Parsed successfully on client");
+                if ((portfolioData as any)?.navbar) (updatedData as any).navbar = (portfolioData as any).navbar;
+                setPortfolioData(updatedData);
+                console.log("[EDIT PIPELINE] Portfolio updated");
+
+                // Step 2: Inject modified JSON back into template
+                const responseInject = await fetchAuthWithRetry('/api/portfolio/inject', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data: updatedData
+                    })
+                });
+
+                if (!responseInject.ok) {
+                    throw new Error("Gagal menyelaraskan estetika visual kode terbaru.");
+                }
+
+                finalHtml = await responseInject.text();
+                setHtmlContent(finalHtml);
+                persistedContent = updatedData;
+                portfolioName = `${updatedData.name} Portfolio`;
+            } else {
+                console.log("[CHAT PIPELINE] Balasan percakapan (tanpa edit visual)");
             }
-            console.log("[EDIT PIPELINE] Parsed successfully on client");
-            if ((portfolioData as any)?.navbar) (updatedData as any).navbar = (portfolioData as any).navbar;
-            setPortfolioData(updatedData);
-            console.log("[EDIT PIPELINE] Portfolio updated");
 
-            // Step 2: Inject modified JSON back into template
-            const responseInject = await fetchAuthWithRetry('/api/portfolio/inject', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    data: updatedData
-                })
-            });
-
-            if (!responseInject.ok) {
-                throw new Error("Gagal menyelaraskan estetika visual kode terbaru.");
-            }
-
-            const updatedHtml = await responseInject.text();
-            setHtmlContent(updatedHtml);
-
-            // Step 3: Persist modified JSON and HTML
+            // Step 3: Simpan percakapan (pesan selalu; HTML/konten hanya kalau ada edit)
             const activeId = id || projectId || String(Date.now());
-            const portfolioName = updatedData.name ? `${updatedData.name} Portfolio` : 'Workspace Kreatif ✨';
-
-            // Append explanation speech from AI assistant
+            const fallbackReply = updatedData ? "Perubahan visual berhasil diterapkan ke dalam struktur portal." : "Ada lagi yang bisa aku bantu?";
             const finalMessages = [
                 ...updatedHistory,
-                { role: 'assistant', content: responseData.explanation || "Perubahan visual berhasil diterapkan ke dalam struktur portal." }
+                { role: 'assistant', content: responseData.explanation || fallbackReply }
             ];
-            setLastTypedContent(responseData.explanation || "Perubahan visual berhasil diterapkan ke dalam struktur portal.");
+            setLastTypedContent(responseData.explanation || fallbackReply);
             setWorkspaceMessages(finalMessages);
 
             if (user && db) {
                 const docRef = doc(db, 'portfolios', activeId);
-                await setDoc(docRef, {
-                    userId: user.uid,
-                    name: portfolioName,
-                    htmlContent: updatedHtml,
-                    content: updatedData,
-                    messages: finalMessages,
-                    updatedAt: Date.now()
-                }, { merge: true });
+                const docPayload: any = { userId: user.uid, messages: finalMessages, updatedAt: Date.now() };
+                if (finalHtml) {
+                    docPayload.name = portfolioName;
+                    docPayload.htmlContent = finalHtml;
+                    docPayload.content = persistedContent;
+                }
+                await setDoc(docRef, docPayload, { merge: true });
             } else {
                 const stored = localStorage.getItem('openfolio_guest_history');
                 let list = [];
@@ -1187,8 +1196,8 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                 list.unshift({
                     id: activeId,
                     name: portfolioName,
-                    htmlContent: updatedHtml,
-                    content: updatedData,
+                    htmlContent: finalHtml || htmlContent || '',
+                    content: persistedContent,
                     messages: finalMessages,
                     updatedAt: Date.now()
                 });

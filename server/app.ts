@@ -14,6 +14,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { applyEditDelta } from "./edit-merge";
 import { detectCasualMessage } from "./casual-detect";
+import { classifyReply } from "./reply-classify";
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
 import type { z } from "zod";
@@ -622,7 +623,8 @@ ${conversationText}`;
     const casualReply = detectCasualMessage(userMessage);
     if (casualReply) {
       console.log("[EDIT PIPELINE] Fast-path: pesan sapaan → balas instan");
-      return res.json({ explanation: casualReply, data: currentData || {} });
+      // Tanpa "data" → client cukup menampilkan balasan di chat (visual tidak di-render ulang).
+      return res.json({ explanation: casualReply });
     }
 
     if (!(await guardQuota(req.user!.uid, "edit", res))) return;
@@ -640,8 +642,13 @@ ${conversationText}`;
           });
       }
 
-      const prompt = `Kamu adalah OpenFolio Identity Editor.
-Tugasmu adalah menerapkan instruksi revisi user pada data portofolio JSON.
+      const prompt = `Kamu adalah asisten AI OpenFolio — khusus membantu pengguna membuat & mengedit portofolio lewat chat.
+
+Tentukan jenis pesan user, lalu ikuti aturannya:
+
+=== JENIS 1: PERINTAH EDIT (mengubah isi portofolio) ===
+Contoh: "ganti nama jadi Budi", "tambah proyek bernama Dashboard", "ubah warna aksen jadi hijau", "pendekkan deskripsi".
+Balas dengan "data" (delta) sesuai ATURAN DELTA + "explanation".
 
 ⚠️ ATURAN DELTA (KEMBALIKAN HANYA YANG BERUBAH):
 1. JANGAN menyalin/mengembalikan seluruh portofolio. Kembalikan HANYA field yang kamu ubah.
@@ -651,20 +658,29 @@ Tugasmu adalah menerapkan instruksi revisi user pada data portofolio JSON.
 5. Untuk array projects, career, skills, stats:
    - Menambah ATAU mengubah satu item = kembalikan SATU object item saja (bukan array).
    - Menghapus atau menamai ulang item = kembalikan ARRAY penuh yang sudah diperbarui.
-6. DILARANG BERHALUSINASI (ZERO FICTION): Jangan tambahkan data fiksi. Pelihara kebenaran data (TRUTH-PRESERVING).
+6. DILARANG BERHALUSINASI (ZERO FICTION): Jangan tambahkan data fiksi. Pelihara kebenaran data.
 7. BAHASA: Gunakan bahasa kasual profesional di 'explanation'.
+
+=== JENIS 2: PERTANYAAN TENTANG APLIKASI INI ===
+Contoh: "kenapa visualnya tidak muncul?", "bagaimana cara menambah proyek?", "fitur apa saja yang ada?".
+Jawab dengan "explanation" saja: jelas, ramah, Bahasa Indonesia. JANGAN sertakan "data".
+
+=== JENIS 3: DI LUAR TOPIK (bukan tentang pembuatan portofolio) ===
+Contoh: "cara memasak ayam", "ceritakan dongeng", "tulis puisi".
+Tolak dengan sopan: kamu adalah AI yang dirancang khusus untuk membuat portofolio, jadi tidak bisa menjawab hal di luar itu. Arahkan kembali ke bantuan portofolio. Hanya "explanation", TANPA "data".
 
 ⚠️ OBJECT JSON PORTOFOLIO SAAT INI (konteks saja — JANGAN disalin ke respons):
 ${JSON.stringify(cleanCurrentData, null, 2)}
 
-INSTRUKSI REVISI USER:
+PESAN USER:
 "${userMessage}"
 
 Format JSON:
 {
   "explanation": "string",
   "data": { "name": "...", ... hanya field yang berubah ... }
-}`;
+}
+Catatan: "data" HANYA untuk JENIS 1. Untuk JENIS 2 & 3, jangan sertakan "data" sama sekali (biarkan hilang atau null).`;
       console.log("[EDIT PIPELINE] Prompt generated");
 
       let response;
@@ -712,16 +728,18 @@ Format JSON:
       console.log("[EDIT PIPELINE] Gemini response", response.text.substring(0, 500) + "...");
 
       const parsed = safeParseJSON(response.text);
-      // Gemini kadang mengembalikan portofolio polos tanpa wrapper { explanation, data }.
-      // Kalau tidak ada `.data` tapi punya `.name` (tanda ini portofolio utuh), terima langsung.
-      let editData: any;
-      if (parsed && parsed.data && typeof parsed.data === 'object' && !Array.isArray(parsed.data)) {
-        editData = parsed.data;
-      } else if (parsed && parsed.name) {
-        editData = parsed;
-      } else {
+
+      // Klasifikasikan balasan Gemini: EDIT (ada data delta) atau CHAT (cuma
+      // explanation — pertanyaan aplikasi / di luar topik, visual tak berubah).
+      const classified = classifyReply(parsed);
+      if (!classified) {
         throw new Error("Respon AI tidak valid atau tidak memiliki object 'data'.");
       }
+      if (classified.kind === "chat") {
+        console.log("[EDIT PIPELINE] Konversasi (tanpa edit) → balas di chat");
+        return res.json({ explanation: classified.explanation });
+      }
+      const editData = classified.data;
 
       let finalData = applyEditDelta(currentData, editData);
 
