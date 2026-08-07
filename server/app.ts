@@ -13,6 +13,7 @@ import rateLimit from "express-rate-limit";
 import { getFirestore } from "firebase-admin/firestore";
 import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { applyEditDelta } from "./edit-merge";
+import { detectCasualMessage } from "./casual-detect";
 import { initAdmin, requireAuth } from "./auth";
 import { canSpend, markSpent, type QuotaType } from "./quota";
 import type { z } from "zod";
@@ -614,12 +615,19 @@ ${conversationText}`;
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
+    const { currentData, userMessage } = req.body as z.infer<typeof editSchema>;
+
+    // Fast-path: sapaan / obrolan ringan (mis. "halo") — balas instan tanpa
+    // memanggil Gemini, biar chat terasa cepat dan tidak membuang kuota edit.
+    const casualReply = detectCasualMessage(userMessage);
+    if (casualReply) {
+      console.log("[EDIT PIPELINE] Fast-path: pesan sapaan → balas instan");
+      return res.json({ explanation: casualReply, data: currentData || {} });
+    }
+
     if (!(await guardQuota(req.user!.uid, "edit", res))) return;
     console.log("[EDIT PIPELINE] Request received");
     try {
-      const { currentData, userMessage, history } = req.body as z.infer<typeof editSchema>;
-      const conversationText = (history || []).map((m) => m.role + ": " + m.content).join("\n");
-      
       const cleanCurrentData = JSON.parse(JSON.stringify(currentData || {}));
       if (cleanCurrentData.hero_image_url && cleanCurrentData.hero_image_url.startsWith("data:")) {
           cleanCurrentData.hero_image_url = "<IMAGE_URL_REMOVED_TO_SAVE_TOKENS_BUT_WILL_BE_INJECTED_LATER>";
