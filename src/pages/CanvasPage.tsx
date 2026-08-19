@@ -252,18 +252,14 @@ export default function CanvasPage() {
     const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
     const [showCanvas, setShowCanvas] = useState(false);
 
-    // -- AUTH & SESSION --
-    // Firebase
     const [user, setUser] = useState<User | null>(null);
     const [authResolved, setAuthResolved] = useState(false);
     const [projectId, setProjectId] = useState<string | null>(id || null);
 
-    // -- PERSISTENCE --
     const getScopedKey = (key: string) => {
         return user ? `user_${user.uid}_${key}` : `guest_${key}`;
     };
 
-    // -- APP CORE STATES --
     const [guidedStage, setGuidedStage] = useState<'navbar' | 'hero' | 'about' | 'skills' | 'projects' | 'career' | 'contact' | 'review' | 'generating' | 'done'>('navbar');
     const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
     const [htmlContent, setHtmlContent] = useState<string>('');
@@ -271,7 +267,6 @@ export default function CanvasPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [quota, setQuota] = useState<QuotaSnapshot>({ generates: 0, edits: 0, lastResetDate: '' });
 
-    // -- NEW MODULAR STATES --
     interface SkillItem {
         id: string;
         name: string;
@@ -349,73 +344,49 @@ export default function CanvasPage() {
     const setCareerTimeline = (v: CareerItem[] | ((prev: CareerItem[]) => CareerItem[])) => setDraftPortfolio(prev => ({ ...prev, career: typeof v === 'function' ? v(prev.career) : v }));
     const setContactInfo = (v: ContactData | ((prev: ContactData) => ContactData)) => setDraftPortfolio(prev => ({ ...prev, contact: typeof v === 'function' ? v(prev.contact) : v }));
     const setStructuredProjects = (v: ProjectInput[] | ((prev: ProjectInput[]) => ProjectInput[])) => setDraftPortfolio(prev => ({ ...prev, projects: typeof v === 'function' ? v(prev.projects) : v }));
-
-    // Add setMessages alias for workspaceMessages to satisfy existing code
     const setMessages = setWorkspaceMessages;
     
-    // -- EDITOR / INTERVIEW STATES --
     const [input, setInput] = useState('');
 
     const [uploadingImageCount, setUploadingImageCount] = useState(0);
 
     const uploadFile = async (file: File): Promise<string> => {
         setUploadingImageCount(prev => prev + 1);
-        console.log(`[Frontend Upload] Initiating upload for ${file.name} (${file.size} bytes)`);
         const startTime = Date.now();
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            console.warn(`[Frontend Upload] Upload timed out after 60 seconds`);
             controller.abort();
-        }, 60000); // 60 second timeout
+        }, 60000);
 
         try {
-            // Bypass Compress Image Client-Side for testing
-            const compressStart = Date.now();
-            console.log(`[Frontend Upload] Bypassing image compression...`);
-            
-            const compressedFile = file;
-            
-            console.log(`[Frontend Upload] Image bypass in ${Date.now() - compressStart}ms: ${compressedFile.size} bytes`);
-            
             const formData = new FormData();
-            formData.append('file', compressedFile);
-            console.log(`[Frontend Upload] Sending request to /api/upload...`);
+            formData.append('file', file);
+            
             const res = await authFetch('/api/upload', {
                 method: 'POST',
                 body: formData,
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
-            console.log(`[Frontend Upload] Received response with status ${res.status} in ${Date.now() - startTime}ms`);
-            const contentType = res.headers.get("content-type");
-            if (res.status === 413) {
-                 throw new Error("File terlalu besar (batas ukuran wajar diperlukan).");
-            }
-            if (res.status === 502 || res.status === 503 || res.status === 504 || (res.status === 200 && contentType && contentType.includes("text/html"))) {
-                 throw new Error("Koneksi ke server terputus atau server sedang restart. Silakan muat ulang halaman.");
-            }
+            
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || "Gagal mengunggah gambar");
+                throw new Error(err.error || 'Gagal mengupload gambar');
             }
+            
             const data = await res.json();
-            console.log(`[Frontend Upload] Upload completed successfully in ${Date.now() - startTime}ms. URL: ${data.url}`);
             return data.url;
         } catch (err: any) {
-             clearTimeout(timeoutId);
-             console.warn(`[Frontend Upload] Caught error in ${Date.now() - startTime}ms:`, err);
-             if (err.name === 'AbortError' || err.message === 'Failed to fetch' || err.message.includes('fetch')) {
-                 throw new Error("Koneksi bermasalah atau upload gambar terlalu lama (timeout limit 60s). Periksa koneksi internet atau gunakan gambar dengan ukuran lebih kecil (<2MB).");
-             }
-             throw err;
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                throw new Error('Upload timeout: Koneksi lambat, coba gunakan gambar dengan ukuran lebih kecil');
+            }
+            throw err;
         } finally {
-            console.log(`[Frontend Upload] Decrementing uploadingImageCount state`);
             setUploadingImageCount(prev => Math.max(0, prev - 1));
         }
     };
 
-    
-    // -- RESTORED STATES --
     const [lastSessionRestored, setLastSessionRestored] = useState(false);
     const [showRestoreToast, setShowRestoreToast] = useState(false);
     useEffect(() => {
@@ -429,7 +400,6 @@ export default function CanvasPage() {
     const [skippedPhoto, setSkippedPhoto] = useState(false);
     const [activeView, setActiveView] = useState<'preview' | 'code'>('preview');
 
-    // -- EDITOR STATES --
     const [editorName, setEditorName] = useState('');
     const [editorRole, setEditorRole] = useState('');
     const [editorBio, setEditorBio] = useState('');
@@ -678,16 +648,8 @@ export default function CanvasPage() {
                 setHtmlContent('');
                 setWorkspaceMessages([]);
                 setIsHydrating(false);
-                
-                // If user is resolved or we know we are guest, we can turn off skipHydration
-                // so that a subsequent login doesn't wipe the new progress.
-                // But since onAuthStateChanged takes a moment, we wait for user to not be undefined
-                // Actually user is null initially. We can just turn it off and let them keep typing.
-                // Wait, if they login later, we don't want to wipe. 
-                // Let's just turn it off so it only wipes the initial load.
+                // Allow subsequent session interactions to persist normally
                 skipHydration.current = false;
-                
-                // Clear state so a refresh doesn't wipe out the new draft
                 navigate(location.pathname, { replace: true, state: {} });
                 return;
             }
@@ -938,43 +900,49 @@ export default function CanvasPage() {
 
         console.log('SANITIZED PAYLOAD', structuredData);
 
-        const updateRealtimePreview = async (currentPct: number, targetData?: any) => {
-            const dataSource = targetData || getProgressiveDataForPct(structuredData, currentPct);
-            try {
-                const html = await callInjectAPI(dataSource);
-                setHtmlContent(html);
-                console.log(`[OpenFolio] Preview synced at ${currentPct}%`);
-            } catch (err) {
-                console.warn("[OpenFolio] Progressive render slip:", err);
-            }
-        };
-
-        // UI Loading Pacer with Instant Fast-Forward capabilities
+        // UI Loading Pacer with Smooth Progression and Fast-Forward
         let progressInterval: NodeJS.Timeout;
-        let fastForwardPacer: () => void = () => {};
+        let fastForwardPacer: () => Promise<void> = async () => {};
+        
         const pacerPromise = new Promise<void>((resolve) => {
             let currentPct = 0;
             progressInterval = setInterval(() => {
-                currentPct += 2;
-                if (currentPct > 95) {
-                    currentPct = 95;
+                if (currentPct < 30) {
+                    currentPct += 2;
+                } else if (currentPct < 65) {
+                    currentPct += 1.5;
+                } else if (currentPct < 85) {
+                    currentPct += 1;
+                } else if (currentPct < 94) {
+                    currentPct += 0.5;
                 }
-                setLoadingPct(currentPct);
-                
-                if (currentPct === 24 || currentPct === 50 || currentPct === 76) {
-                    updateRealtimePreview(currentPct);
+                if (currentPct > 94) {
+                    currentPct = 94;
                 }
-            }, 80);
+                setLoadingPct(Math.round(currentPct));
+            }, 60);
 
             fastForwardPacer = () => {
                 clearInterval(progressInterval);
-                setLoadingPct(100);
-                resolve();
+                return new Promise<void>((fResolve) => {
+                    let endPct = currentPct;
+                    const finishInterval = setInterval(() => {
+                        endPct += 3;
+                        if (endPct >= 100) {
+                            endPct = 100;
+                            clearInterval(finishInterval);
+                            setLoadingPct(100);
+                            setTimeout(fResolve, 300);
+                        } else {
+                            setLoadingPct(Math.round(endPct));
+                        }
+                    }, 20);
+                });
             };
+            resolve();
         });
 
         try {
-            // Step 1: AI Generation (Heavy Lift)
             console.log("[OpenFolio] Requesting AI Identity Synthesis...");
             const responseGen = await fetchAuthWithRetry('/api/gemini/generate', {
                 method: 'POST',
@@ -999,16 +967,11 @@ export default function CanvasPage() {
             generatedData.navbar = structuredData.navbar;
             console.log("[OpenFolio] AI Synthesis Complete.");
 
-            // Step 2: Final Injection
             injectedHtml = await callInjectAPI(generatedData);
             console.log("[OpenFolio] Final Code Injection Complete.");
 
-            // Accelerate progress and finish transition
-            fastForwardPacer();
-            await pacerPromise;
+            await fastForwardPacer();
 
-            // Step 3: Finalize Persistence
-            // Build finalMessages once and use the same array for persist & state (finding #16).
             const finalMessages = [
                 ...workspaceMessages,
                 {
@@ -1040,7 +1003,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                     messages: finalMessages,
                     updatedAt: Date.now()
                 }, { merge: true });
-                setQuota(await getQuota()); // server sudah menghitung; refresh tampilan kuota
+                setQuota(await getQuota());
             } else {
                 const stored = localStorage.getItem('openfolio_guest_history');
                 let list = [];
@@ -1063,7 +1026,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                          try { localStorage.setItem('openfolio_guest_history', JSON.stringify(list)); } catch(ee) {}
                     }
                 }
-                setQuota(await getQuota()); // server sudah menghitung; refresh tampilan kuota
+                setQuota(await getQuota());
                 window.dispatchEvent(new Event('openfolio_history_change'));
             }
 
@@ -1073,12 +1036,22 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             setGuidedStage('done');
             setShowCanvas(true);
             navigate(`/app/${newId}`, { replace: true });
-            console.log("[OpenFolio] Generation Lifecycle Finished Successfully.");
+            console.log("[OpenFolio] Generation Finished Successfully.");
 
         } catch (err: any) {
-            console.error("[OpenFolio] CRITICAL GENERATION ERROR:", err);
-            alert("Terjadi kesalahan: " + (err.message || "Gagal membangun portfolio."));
-            setGuidedStage('contact'); // Fallback to last valid stage
+            console.error("[OpenFolio] Generation Error:", err);
+            const isAborted = err.name === 'AbortError' || err.message?.includes('aborted');
+            if (isAborted) {
+                showToast("Proses pembuatan dibatalkan.");
+            } else {
+                showToast(err.message || "Gagal membangun portfolio.");
+            }
+            try {
+                setQuota(await getQuota());
+            } catch (e) {
+                console.warn("[OpenFolio] Quota refresh error:", e);
+            }
+            setGuidedStage('contact');
         } finally {
             setIsGenerating(false);
             if (progressInterval!) clearInterval(progressInterval);
@@ -1095,7 +1068,6 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
         setIsEditingPortfolio(true);
 
         try {
-            // Step 1: Hit Gemini edit API to update the JSON content
             const res = await fetchAuthWithRetry('/api/gemini/edit', {
                 method: 'POST',
                 headers: {
@@ -1131,7 +1103,6 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             setPortfolioData(updatedData);
             console.log("[EDIT PIPELINE] Portfolio updated");
 
-            // Step 2: Inject modified JSON back into template
             const responseInject = await fetchAuthWithRetry('/api/portfolio/inject', {
                 method: 'POST',
                 headers: {
@@ -1149,11 +1120,9 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
             const updatedHtml = await responseInject.text();
             setHtmlContent(updatedHtml);
 
-            // Step 3: Persist modified JSON and HTML
             const activeId = id || projectId || String(Date.now());
             const portfolioName = updatedData.name ? `${updatedData.name} Portfolio` : 'Workspace Kreatif ✨';
 
-            // Append explanation speech from AI assistant
             const finalMessages = [
                 ...updatedHistory,
                 { role: 'assistant', content: responseData.explanation || "Perubahan visual berhasil diterapkan ke dalam struktur portal." }
@@ -2207,7 +2176,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                               <button
                                                   onClick={handlePublish}
                                                   disabled={isPublishing || !portfolioData}
-                                                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                  className="px-4 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                                               >
                                                   {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
                                                   <span>{isPublishing ? (lang === 'id' ? 'Mempublikasikan...' : 'Publishing...') : (lang === 'id' ? 'Publikasikan' : 'Publish')}</span>

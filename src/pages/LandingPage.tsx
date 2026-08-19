@@ -38,7 +38,7 @@ export default function LandingPage() {
               <Github className="w-5 h-5" />
             </a>
             <Link to="/app" className="bg-white text-black px-5 py-2 rounded-lg font-semibold text-sm hover:bg-zinc-200 transition-colors">
-              Deploy
+              Buka Studio
             </Link>
           </div>
         </nav>
@@ -50,8 +50,8 @@ export default function LandingPage() {
           <div className="md:col-span-7 bg-[#131318] border border-white/5 rounded-2xl p-8 md:p-10 flex flex-col justify-between min-h-[320px] relative overflow-hidden">
             <div className="absolute -top-10 -right-10 w-64 h-64 bg-white/[0.03] rounded-full blur-3xl pointer-events-none" />
             <div className="inline-flex items-center gap-2 self-start px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs font-semibold text-zinc-300 uppercase tracking-wider">
-              <span className="h-2 w-2 rounded-full bg-zinc-500 animate-pulse" />
-              AI Portfolio Builder · Gratis
+              <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
+              Powered by Google Gemini 2.0 Flash · Tanpa Login
             </div>
             <div>
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.05] mb-5">
@@ -61,7 +61,7 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="text-lg text-zinc-400 max-w-md font-light leading-relaxed mb-7">
-                Tempel data → AI susun → pilih template → publish URL publik. Tanpa login.
+                Didukung Google Gemini API. Tempel data → AI susun → pilih template → publish URL publik.
               </p>
               <Link to="/app" className="inline-flex items-center gap-2 bg-white text-black px-7 py-3.5 rounded-xl font-semibold hover:bg-zinc-200 transition-all group">
                 Mulai Membuat Gratis
@@ -87,7 +87,7 @@ export default function LandingPage() {
                 <div className="h-2 bg-zinc-800 rounded w-4/6" />
               </div>
               <div className="flex gap-2 mt-5">
-                {["React", "TS", "AI"].map((t) => (
+                {["React 19", "Tailwind v4", "Gemini 2.0 Flash"].map((t) => (
                   <span key={t} className="text-[10px] px-2 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-400">{t}</span>
                 ))}
               </div>

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "antislop": {
+      "source": "miqdadbadjuber/anti-slop",
+      "sourceType": "github",
+      "skillPath": "skills/antislop/SKILL.md",
+      "computedHash": "6f3af78a5efc6f6cb5fb99c668701fff7fd4f51584ea8ceb5f9f85851d18fcb1"
+    },
+    "antislop-code": {
+      "source": "miqdadbadjuber/anti-slop",
+      "sourceType": "github",
+      "skillPath": "skills/antislop-code/SKILL.md",
+      "computedHash": "3c3c0cf90461b386e39d645771650c0e70245e4e581a6979a61ba60350d96df8"
+    },
+    "antislop-copywriting": {
+      "source": "miqdadbadjuber/anti-slop",
+      "sourceType": "github",
+      "skillPath": "skills/antislop-copywriting/SKILL.md",
+      "computedHash": "781e2c5d37605d70fc09364719698efb633d806c41e0cb39c5f4d6af7495e9bb"
+    }
+  }
+}

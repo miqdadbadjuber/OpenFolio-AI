@@ -379,7 +379,7 @@ ${conversationText}`;
         while (attempt < maxAttempts) {
           try {
             response = await ai.models.generateContent({
-              model: "gemini-2.5-flash",
+              model: "gemini-2.0-flash",
               contents: prompt,
               config: {
                 responseMimeType: "application/json",
@@ -626,7 +626,7 @@ Format JSON:
       while (attempt < maxAttempts) {
         try {
           response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: prompt,
             config: {
               responseMimeType: "application/json"
@@ -679,10 +679,9 @@ Format JSON:
           }
       }
 
-      // --- PROJECT SMART MERGE FIX ---
+      // Smart merge projects array
       if (parsed.data.projects !== undefined) {
           if (!Array.isArray(parsed.data.projects) && isObject(parsed.data.projects)) {
-              // Jika Gemini mengembalikan object tunggal (kesalahan umum delta), ubah menjadi array lalu merge
               let inc = parsed.data.projects;
               let mergedProjects = Array.isArray(currentData.projects) ? [...currentData.projects] : [];
               const titleMatch = inc?.title || inc?.name;
@@ -699,12 +698,11 @@ Format JSON:
               }
               finalData.projects = mergedProjects;
           } else if (Array.isArray(parsed.data.projects)) {
-              // Percaya pada Array penuh dari Gemini agar operasi Delete / Rename bisa berjalan
               finalData.projects = parsed.data.projects;
           }
       }
 
-      // --- CAREER ADDITION MERGE FIX ---
+      // Smart merge career timeline array
       if (parsed.data.career !== undefined) {
           let incomingCareer = parsed.data.career;
           if (isObject(incomingCareer)) incomingCareer = [incomingCareer];
