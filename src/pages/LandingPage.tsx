@@ -1,4 +1,4 @@
-import { ArrowRight, Github, Check, X, Sparkles, Share2, FileText, Code2, Monitor, MessageSquare, Download, Layers, ShieldCheck } from "lucide-react";
+import { ArrowRight, Github, Check, X } from "lucide-react";
 import { Link } from "react-router";
 import Logo from "../components/Logo";
 
@@ -6,75 +6,71 @@ const GITHUB_URL = "https://github.com/MiqdadBadjuber/OpenFolio-AI";
 
 const WORKFLOW = [
   {
-    step: "01",
-    title: "Input Data & Riwayat",
-    desc: "Isi nama, bio singkat, riwayat karier, keahlian, dan proyek unggulan Anda."
+    num: "1",
+    title: "Isi Profil & Riwayat",
+    desc: "Masukkan informasi diri, tautan proyek, keahlian teknis, dan pengalaman kerja melalui form builder terstruktur."
   },
   {
-    step: "02",
-    title: "AI Layout Intelligence",
-    desc: "Sistem merancang struktur hierarki, ritme visual, dan tipografi secara otomatis."
+    num: "2",
+    title: "AI Merancang Layout",
+    desc: "Sistem menyusun hierarki visual, ritme spasi, dan palet warna yang proporsional secara otomatis."
   },
   {
-    step: "03",
-    title: "Live Studio & Chat Edit",
-    desc: "Tinjau pratinjau langsung dan ajukan revisi desain melalui asisten obrolan cerdas."
+    num: "3",
+    title: "Pratinjau & Chat Revisi",
+    desc: "Lihat hasil instan di kanvas interaktif dan minta perubahan gaya atau teks melalui obrolan langsung."
   },
   {
-    step: "04",
-    title: "Export & Publikasikan",
-    desc: "Unduh file HTML mandiri yang bersih atau dapatkan URL publik instan untuk dibagikan."
+    num: "4",
+    title: "Unduh atau Publikasikan",
+    desc: "Ekspor menjadi satu file HTML mandiri tanpa dependensi, atau dapatkan tautan publik instan."
   }
 ];
 
 const FEATURES = [
   {
-    category: "ARSITEKTUR DESAIN",
-    title: "Adaptive Layout Intelligence",
-    desc: "Menghasilkan komposisi desain yang proporsional dan dinamis sesuai profil Anda, tanpa terjebak pada template kaku."
+    title: "Layout Adaptif Berbasis Data",
+    desc: "Bukan template statis yang kaku. Struktur tata letak dan ritme visual disesuaikan dinamis mengikuti kepadatan konten dan peran profesional Anda."
   },
   {
-    category: "WORKSPACE STUDIO",
-    title: "Realtime Cockpit Canvas",
-    desc: "Pratinjau interaktif di dalam iframe terisolasi yang langsung tersinkronisasi setiap kali ada perubahan konten."
+    title: "Workspace Studio Realtime",
+    desc: "Kanvas pratinjau terisolasi yang langsung memperbarui tampilan saat Anda mengisi data atau meminta revisi, lengkap dengan mode desktop dan mobile."
   },
   {
-    category: "INTERAKSI ALAMI",
-    title: "AI Chat Revision Engine",
-    desc: "Ubah warna aksen, susun ulang urutan bagian, atau sesuaikan gaya bahasa melalui instruksi obrolan natural."
+    title: "Revisi Obrolan Interaktif",
+    desc: "Minta perubahan spesifik seperti penyesuaian warna aksen, penulisan ulang deskripsi proyek, atau reposisi bagian portofolio dengan bahasa santai."
   },
   {
-    category: "PORTABILITAS KODE",
-    title: "Clean Standalone HTML",
-    desc: "Unduh kode HTML dan Tailwind CSS mandiri tanpa dependensi rumit, siap di-hosting di server mana saja."
+    title: "Kode HTML Mandiri Siap Host",
+    desc: "Hasil akhir adalah file HTML dan Tailwind CSS murni. Anda memegang kendali penuh atas kode Anda tanpa ketergantungan platform."
   }
 ];
 
 const COMPARISON: Array<[string, string, string]> = [
-  ["Waktu Pembuatan", "Hitungan detik", "Berjam-jam hingga harian"],
-  ["Sistem Login", "Tanpa login (Sesi tamu instan)", "Wajib registrasi akun"],
-  ["Pendekatan Desain", "Layout adaptif berbasis data", "Template kaku seragam"],
-  ["Hasil Kode", "File HTML mandiri & bersih", "Terkunci di platform pembuat"],
-  ["Kemudahan Revisi", "Interaktif via obrolan AI", "Edit manual satu per satu"],
-  ["Biaya & Lisensi", "100% Gratis & Open Source (MIT)", "Langganan bulanan mahal"],
+  ["Waktu Pengerjaan", "Hitungan menit", "Berhari-hari hingga berminggu-minggu"],
+  ["Sistem Akun", "Langsung pakai tanpa registrasi", "Wajib login dan verifikasi email"],
+  ["Arsitektur Desain", "Tata letak adaptif otomatis", "Pilihan template kaku yang pasaran"],
+  ["Kepemilikan Kode", "File HTML mandiri milik Anda", "Terkunci di dalam platform pembuat"],
+  ["Proses Revisi", "Perubahan instan via chat AI", "Edit manual satu per satu secara rumit"],
+  ["Biaya", "Gratis dan open-source (MIT)", "Biaya langganan bulanan mahal"],
 ];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-[#18180F] font-sans selection:bg-[#B85C2C] selection:text-white">
-      {/* Top Navigation */}
-      <header className="sticky top-0 z-50 bg-[#FAF9F6]/90 backdrop-blur-md border-b border-[#E6E3DC]">
-        <div className="max-w-[1160px] mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <Logo size={24} variant="currentColor" className="text-[#18180F]" />
-            <span className="font-semibold text-base tracking-tight text-[#18180F]">OpenFolio</span>
+    <div className="min-h-screen bg-[#0A0A0B] text-[#F5F5F7] font-sans selection:bg-white selection:text-black">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-[#0A0A0B]/85 backdrop-blur-md border-b border-white/[0.06]">
+        <div className="max-w-[1120px] mx-auto px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2.5">
+            <Logo size={22} variant="white" />
+            <span className="font-semibold text-sm tracking-tight text-white">OpenFolio</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-xs font-medium text-[#18180F]/70">
-            <a href="#cara-kerja" className="hover:text-[#B85C2C] transition-colors">Cara Kerja</a>
-            <a href="#fitur" className="hover:text-[#B85C2C] transition-colors">Fitur Studio</a>
-            <a href="#perbandingan" className="hover:text-[#B85C2C] transition-colors">Kenapa OpenFolio</a>
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-[#B85C2C] transition-colors flex items-center gap-1.5">
+          <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-zinc-400">
+            <a href="#cara-kerja" className="hover:text-white transition-colors">Cara Kerja</a>
+            <a href="#fitur" className="hover:text-white transition-colors">Fitur</a>
+            <a href="#perbandingan" className="hover:text-white transition-colors">Perbandingan</a>
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1.5">
               <Github className="w-3.5 h-3.5" />
               GitHub
             </a>
@@ -85,122 +81,115 @@ export default function LandingPage() {
               href={GITHUB_URL} 
               target="_blank" 
               rel="noreferrer" 
-              className="p-2 text-[#18180F]/60 hover:text-[#18180F] transition-colors md:hidden"
+              className="p-2 text-zinc-400 hover:text-white transition-colors md:hidden"
               aria-label="GitHub Repository"
             >
               <Github className="w-4 h-4" />
             </a>
             <Link 
               to="/app" 
-              className="inline-flex items-center gap-1.5 bg-[#18180F] text-[#FAF9F6] px-4 py-2 rounded-lg text-xs font-medium hover:bg-[#18180F]/90 transition-colors"
+              className="bg-white text-black px-4 py-2 rounded-lg text-xs font-medium hover:bg-zinc-200 transition-colors"
             >
               Buka Studio
-              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="max-w-[1160px] mx-auto px-6 pt-12 md:pt-16 pb-20">
+      <main className="max-w-[1120px] mx-auto px-6 pt-16 md:pt-24 pb-24">
         {/* Hero Section */}
-        <section className="mb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left: Headline & CTAs */}
+        <section className="mb-28">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Headline */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#E6E3DC] rounded-full text-[11px] font-medium text-[#18180F]">
-                <span className="w-2 h-2 rounded-full bg-[#B85C2C]" />
-                Didukung Google Gemini 2.0 Flash (Tanpa Login)
-              </div>
-
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-[#18180F] leading-[1.15]">
-                Rancang identitas digital profesional Anda, dikodekan cerdas oleh AI.
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.08]">
+                Portofolio profesional Anda, dikodekan cerdas oleh AI.
               </h1>
 
-              <p className="text-sm md:text-base text-[#18180F]/70 font-normal leading-relaxed max-w-xl">
-                OpenFolio mengubah riwayat karier, karya proyek, dan keahlian Anda menjadi website portofolio yang rapi, responsif, dan siap dipublikasikan dalam hitungan detik.
+              <p className="text-base sm:text-lg text-zinc-400 font-normal leading-relaxed max-w-xl">
+                Ubah riwayat karier, karya proyek, dan keahlian Anda menjadi website portofolio yang bersih, responsif, dan siap dipublikasikan tanpa perlu membuat website dari nol.
               </p>
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link 
                   to="/app" 
-                  className="inline-flex items-center gap-2 bg-[#18180F] text-[#FAF9F6] px-6 py-3 rounded-lg text-sm font-medium hover:bg-[#18180F]/90 transition-all shadow-none"
+                  className="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-200 transition-colors"
                 >
-                  Mulai Rancang Gratis
+                  Mulai Buat Portofolio
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a 
                   href={GITHUB_URL} 
                   target="_blank" 
                   rel="noreferrer" 
-                  className="inline-flex items-center gap-2 bg-white border border-[#E6E3DC] text-[#18180F] px-5 py-3 rounded-lg text-sm font-medium hover:bg-[#FAF9F6] transition-colors"
+                  className="inline-flex items-center gap-2 bg-zinc-900 border border-white/10 text-zinc-200 px-5 py-3 rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors"
                 >
-                  <Github className="w-4 h-4 text-[#18180F]/70" />
-                  Bintang di GitHub
+                  <Github className="w-4 h-4 text-zinc-400" />
+                  Lihat di GitHub
                 </a>
               </div>
 
-              <div className="flex items-center gap-6 pt-4 text-xs text-[#18180F]/60">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#B85C2C]" /> Tanpa kartu kredit
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Code2 className="w-4 h-4 text-[#B85C2C]" /> Kode HTML mandiri
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#B85C2C]" /> Kuota harian gratis
-                </span>
+              <div className="flex flex-wrap items-center gap-6 pt-4 text-xs text-zinc-500 font-medium">
+                <span>Tanpa registrasi akun</span>
+                <span>·</span>
+                <span>Download file HTML</span>
+                <span>·</span>
+                <span>Open source (MIT)</span>
               </div>
             </div>
 
-            {/* Right: Editorial Portfolio Mockup */}
+            {/* Realistic Portfolio Mockup */}
             <div className="lg:col-span-5">
-              <div className="bg-white border border-[#E6E3DC] rounded-xl p-5 shadow-none space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#E6E3DC]">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#E6E3DC]" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#E6E3DC]" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#E6E3DC]" />
+              <div className="bg-[#121215] border border-white/[0.08] rounded-2xl p-6 space-y-5">
+                {/* Browser bar */}
+                <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
                   </div>
-                  <span className="text-[11px] font-mono text-[#B85C2C] bg-[#FAF9F6] px-2.5 py-0.5 rounded border border-[#E6E3DC]">
-                    /p/alex-pratama
+                  <span className="text-xs font-mono text-zinc-400 bg-zinc-900/80 px-3 py-1 rounded-md border border-white/[0.06]">
+                    openfolio.app/p/alex-pratama
                   </span>
                 </div>
 
-                {/* Profile Header Preview */}
-                <div className="flex items-start gap-3.5 pt-1">
-                  <div className="w-12 h-12 rounded-lg bg-[#FAF9F6] border border-[#E6E3DC] flex items-center justify-center text-xs font-semibold text-[#B85C2C]">
-                    AP
+                {/* Profile snippet */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs font-bold text-white">
+                      AP
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">Alex Pratama</div>
+                      <div className="text-xs text-zinc-400">Software Architect & Frontend Engineer</div>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-sm font-semibold text-[#18180F]">Alex Pratama</div>
-                    <div className="text-xs text-[#18180F]/60">Software Engineer & UI Specialist</div>
-                  </div>
+
+                  <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-900/50 p-3.5 rounded-xl border border-white/[0.04]">
+                    Membangun sistem web berskala besar, performa tinggi, dan pengalaman antarmuka yang presisi.
+                  </p>
                 </div>
 
-                <p className="text-xs text-[#18180F]/70 leading-relaxed bg-[#FAF9F6] p-3 rounded-lg border border-[#E6E3DC]">
-                  Fokus pada arsitektur web modern, skalabilitas sistem, dan pengalaman antarmuka pengguna yang terstruktur rapi.
-                </p>
-
-                {/* Tech Chips */}
-                <div className="space-y-1.5">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#18180F]/50">Keahlian Utama</div>
+                {/* Skills tags */}
+                <div className="space-y-2">
+                  <div className="text-[11px] font-medium text-zinc-500">Tech Stack & Keahlian</div>
                   <div className="flex flex-wrap gap-1.5">
                     {["TypeScript", "React 19", "Next.js", "Tailwind CSS", "Node.js"].map(tag => (
-                      <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-[#FAF9F6] border border-[#E6E3DC] text-[#18180F]/80">
+                      <span key={tag} className="text-[11px] px-2.5 py-1 rounded-md bg-zinc-900 border border-white/[0.06] text-zinc-300">
                         {tag}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                {/* Project Box Preview */}
-                <div className="border border-[#E6E3DC] rounded-lg p-3 bg-white space-y-1.5">
+                {/* Project card preview */}
+                <div className="border border-white/[0.06] rounded-xl p-4 bg-zinc-900/30 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-[#18180F]">CloudMetrics Platform</span>
-                    <span className="text-[10px] text-[#B85C2C] font-mono">Live Demo</span>
+                    <span className="text-xs font-semibold text-white">CloudMetrics Studio</span>
+                    <span className="text-[11px] text-zinc-400 font-mono">Live Demo</span>
                   </div>
-                  <p className="text-[11px] text-[#18180F]/60 leading-normal">
-                    Dasbor analitik terdistribusi dengan pemantauan metrik server secara realtime.
+                  <p className="text-xs text-zinc-400 leading-normal">
+                    Dasbor analitik terdistribusi dengan visualisasi metrik latensi dan throughput secara realtime.
                   </p>
                 </div>
               </div>
@@ -209,148 +198,140 @@ export default function LandingPage() {
         </section>
 
         {/* Workflow Section */}
-        <section id="cara-kerja" className="mb-20 scroll-mt-24">
-          <div className="border-t border-[#E6E3DC] pt-12">
-            <div className="space-y-2 mb-10">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#B85C2C]">ALUR KERJA</span>
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#18180F]">
-                Dari data mentah menjadi portofolio siap publish.
-              </h2>
-            </div>
+        <section id="cara-kerja" className="mb-28 scroll-mt-24">
+          <div className="space-y-3 mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              Cara Kerja
+            </h2>
+            <p className="text-sm text-zinc-400 max-w-lg">
+              Alur terstruktur dari pengisian data riwayat hingga website portofolio siap digunakan.
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {WORKFLOW.map(item => (
-                <div 
-                  key={item.step} 
-                  className="bg-white border border-[#E6E3DC] rounded-xl p-5 flex flex-col justify-between space-y-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-semibold text-[#B85C2C] bg-[#FAF9F6] px-2 py-0.5 rounded border border-[#E6E3DC]">
-                      {item.step}
-                    </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-sm font-semibold text-[#18180F]">{item.title}</h3>
-                    <p className="text-xs text-[#18180F]/70 leading-relaxed">{item.desc}</p>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {WORKFLOW.map(item => (
+              <div 
+                key={item.num} 
+                className="bg-[#121215] border border-white/[0.08] rounded-xl p-6 flex flex-col justify-between space-y-4"
+              >
+                <div className="text-2xl font-bold font-mono text-zinc-600">
+                  {item.num}
                 </div>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+                  <p className="text-xs text-zinc-400 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* Features Catalog Section */}
-        <section id="fitur" className="mb-20 scroll-mt-24">
-          <div className="border-t border-[#E6E3DC] pt-12">
-            <div className="space-y-2 mb-10">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#B85C2C]">KAPABILITAS STUDIO</span>
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#18180F]">
-                Fitur esensial untuk kemudahan kustomisasi.
-              </h2>
-            </div>
+        {/* Features Section */}
+        <section id="fitur" className="mb-28 scroll-mt-24">
+          <div className="space-y-3 mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              Fitur Utama
+            </h2>
+            <p className="text-sm text-zinc-400 max-w-lg">
+              Semua yang Anda butuhkan untuk membangun dan memodifikasi portofolio secara fleksibel.
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {FEATURES.map(feat => (
-                <div 
-                  key={feat.title} 
-                  className="bg-white border border-[#E6E3DC] rounded-xl p-6 space-y-3"
-                >
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#B85C2C]">
-                    {feat.category}
-                  </span>
-                  <h3 className="text-base font-semibold text-[#18180F]">
-                    {feat.title}
-                  </h3>
-                  <p className="text-xs text-[#18180F]/70 leading-relaxed font-normal">
-                    {feat.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {FEATURES.map(feat => (
+              <div 
+                key={feat.title} 
+                className="bg-[#121215] border border-white/[0.08] rounded-xl p-6 space-y-2.5"
+              >
+                <h3 className="text-base font-semibold text-white">
+                  {feat.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed font-normal">
+                  {feat.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* Comparison Section */}
-        <section id="perbandingan" className="mb-20 scroll-mt-24">
-          <div className="border-t border-[#E6E3DC] pt-12">
-            <div className="space-y-2 mb-10">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#B85C2C]">PERBANDINGAN</span>
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#18180F]">
-                Mengapa memilih OpenFolio?
-              </h2>
+        <section id="perbandingan" className="mb-28 scroll-mt-24">
+          <div className="space-y-3 mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              Kenapa OpenFolio?
+            </h2>
+            <p className="text-sm text-zinc-400 max-w-lg">
+              Perbandingan pendekatan OpenFolio dengan metode pembuatan website konvensional.
+            </p>
+          </div>
+
+          <div className="bg-[#121215] border border-white/[0.08] rounded-xl overflow-hidden">
+            <div className="grid grid-cols-3 bg-zinc-900/70 border-b border-white/[0.08] p-4 text-xs font-semibold text-white">
+              <div>Aspek</div>
+              <div className="text-white">OpenFolio</div>
+              <div className="text-zinc-500">Metode Konvensional</div>
             </div>
 
-            <div className="bg-white border border-[#E6E3DC] rounded-xl overflow-hidden">
-              <div className="grid grid-cols-3 bg-[#FAF9F6] border-b border-[#E6E3DC] p-4 text-xs font-semibold text-[#18180F]">
-                <div>Parameter</div>
-                <div className="text-[#B85C2C]">OpenFolio AI</div>
-                <div className="text-[#18180F]/60">Metode Konvensional</div>
-              </div>
-
-              <div className="divide-y divide-[#E6E3DC]">
-                {COMPARISON.map(([param, us, them]) => (
-                  <div key={param} className="grid grid-cols-3 p-4 text-xs items-center">
-                    <div className="font-medium text-[#18180F]">{param}</div>
-                    <div className="flex items-center gap-1.5 text-[#18180F] font-medium">
-                      <Check className="w-3.5 h-3.5 text-[#B85C2C] shrink-0" />
-                      {us}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[#18180F]/50">
-                      <X className="w-3.5 h-3.5 text-[#18180F]/30 shrink-0" />
-                      {them}
-                    </div>
+            <div className="divide-y divide-white/[0.06]">
+              {COMPARISON.map(([param, us, them]) => (
+                <div key={param} className="grid grid-cols-3 p-4 text-xs items-center">
+                  <div className="font-medium text-zinc-300">{param}</div>
+                  <div className="flex items-center gap-2 text-white font-medium">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    {us}
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-2 text-zinc-500">
+                    <X className="w-4 h-4 text-zinc-600 shrink-0" />
+                    {them}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Bottom CTA Banner */}
-        <section className="bg-white border border-[#E6E3DC] rounded-2xl p-8 md:p-12 text-center space-y-5">
-          <span className="inline-block text-[11px] font-mono uppercase tracking-wider text-[#B85C2C]">
-            MULAI SEKARANG
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-[#18180F] max-w-xl mx-auto">
-            Portofolio profesional Anda hanya beberapa langkah lagi.
+        {/* Bottom CTA Box */}
+        <section className="bg-[#121215] border border-white/[0.08] rounded-2xl p-8 md:p-14 text-center space-y-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white max-w-xl mx-auto">
+            Mulai rancang portofolio Anda sekarang.
           </h2>
-          <p className="text-xs sm:text-sm text-[#18180F]/70 max-w-md mx-auto leading-relaxed">
-            Tanpa pendaftaran, tanpa kartu kredit. Buat, sesuaikan lewat chat, dan unduh website portofolio Anda secara gratis.
+          <p className="text-sm text-zinc-400 max-w-md mx-auto leading-relaxed">
+            Tanpa registrasi dan tanpa biaya. Buka studio, isi data, dan hasilkan website portofolio Anda dalam hitungan detik.
           </p>
           <div className="pt-2 flex flex-wrap justify-center gap-3">
             <Link 
               to="/app" 
-              className="inline-flex items-center gap-2 bg-[#18180F] text-[#FAF9F6] px-6 py-3 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#18180F]/90 transition-colors"
+              className="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-lg text-sm font-semibold hover:bg-zinc-200 transition-colors"
             >
-              Buka Studio OpenFolio
+              Buka Studio
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a 
               href={GITHUB_URL} 
               target="_blank" 
               rel="noreferrer" 
-              className="inline-flex items-center gap-2 bg-[#FAF9F6] border border-[#E6E3DC] text-[#18180F] px-5 py-3 rounded-lg text-xs sm:text-sm font-medium hover:bg-white transition-colors"
+              className="inline-flex items-center gap-2 bg-zinc-900 border border-white/10 text-zinc-300 px-5 py-3 rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors"
             >
               <Github className="w-4 h-4" />
-              Kode Sumber di GitHub
+              Bintang di GitHub
             </a>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#E6E3DC] py-8 bg-[#FAF9F6]">
-        <div className="max-w-[1160px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#18180F]/60">
+      <footer className="border-t border-white/[0.06] py-8 bg-[#0A0A0B]">
+        <div className="max-w-[1120px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
           <div className="flex items-center gap-2">
-            <Logo size={18} variant="currentColor" className="text-[#18180F]" />
+            <Logo size={16} variant="white" />
             <span>OpenFolio © {new Date().getFullYear()} · Lisensi Open Source (MIT)</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-[#B85C2C] transition-colors">
-              GitHub Repository
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="hover:text-zinc-300 transition-colors">
+              GitHub
             </a>
-            <Link to="/app" className="hover:text-[#B85C2C] transition-colors">
-              Studio Workspace
+            <Link to="/app" className="hover:text-zinc-300 transition-colors">
+              Buka Studio
             </Link>
           </div>
         </div>
