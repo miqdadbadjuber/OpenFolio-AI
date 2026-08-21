@@ -53,7 +53,14 @@ describe("sanitizePortfolioData", () => {
       socials: { github: ["x"] as any },
     });
     expect(out.projects[0].link).toBe("#");
-    expect(out.projects[0].image_url).toBe("#");
+    expect(out.projects[0].image_url).toBeNull();
     expect(out.socials.github).toBe("#");
+  });
+  it("memvalidasi dan menolak format hex warna yang tidak valid", () => {
+    const outValid = sanitizePortfolioData({ color_accent: "#C9A84C" });
+    expect(outValid.color_accent).toBe("#C9A84C");
+
+    const outMalicious = sanitizePortfolioData({ color_accent: "#000; } body { display:none }" });
+    expect(outMalicious.color_accent).toBe("#6366F1");
   });
 });

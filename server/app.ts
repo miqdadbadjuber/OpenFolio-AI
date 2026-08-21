@@ -14,7 +14,7 @@ import rateLimit from "express-rate-limit";
 import { getFirestore } from "firebase-admin/firestore";
 import { escapeHTML, safeParseJSON, slugify, sanitizePortfolioData, buildPortfolioHTMLString } from "./portfolio-render";
 import { initAdmin, requireAuth } from "./auth";
-import { canSpend, markSpent, type QuotaType } from "./quota";
+import { canSpend, markSpent, reserveQuota, refundQuota, type QuotaType } from "./quota";
 import type { z } from "zod";
 import { generateSchema, editSchema, injectSchema, publishSchema, validate } from "./validation";
 
@@ -62,9 +62,20 @@ async function assertMagicBytes(filePath: string, allowed: Set<string>): Promise
   return !!type && allowed.has(type.ext);
 }
 
+const isPlaceholder = (url: any) => typeof url === 'string' && url.includes("IMAGE_URL_REMOVED");
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT || 3001);
+
+  // Security Headers Middleware
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+  });
 
   const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:3001").split(",").map(s => s.trim());
   app.use(cors({ origin: corsOrigins }));
@@ -90,14 +101,13 @@ async function startServer() {
   app.use("/api/upload", fileLimiter);
   app.use("/api/pdf/parse", fileLimiter);
 
-  async function guardQuota(uid: string, type: QuotaType, res: any): Promise<boolean> {
+  async function guardAndSpendQuota(uid: string, type: QuotaType, res: any): Promise<boolean> {
     let ok: boolean;
     try {
-      ok = await canSpend(uid, type);
+      ok = await reserveQuota(uid, type);
     } catch (e) {
-      // Firestore read failed — don't hang the request (Express 4 doesn't catch async
-      // rejections thrown before the route's own try). Fail closed with 503 instead.
-      console.error("[Quota] Gagal membaca kuota:", e);
+      // Firestore transaction failed — fail closed with 503 instead of crashing
+      console.error("[Quota] Gagal memproses kuota:", e);
       res.status(503).json({ error: "Layanan quota sedang tidak tersedia." });
       return false;
     }
@@ -163,10 +173,18 @@ async function startServer() {
     const templateName = template || "obsidian";
     const name = structured?.fullName || "";
     const role = structured?.role || "";
-    const bio = structured?.bio || "";
-    const skillsList = Array.isArray(structured?.skills) 
-      ? structured.skills 
-      : (typeof structured?.skills === 'string' ? structured.skills.split(',').map((s: string) => s.trim()) : []);
+    const bio = structured?.about || structured?.bio || "";
+    const rawSkills = structured?.skills;
+    let skillsList: string[] = [];
+    if (Array.isArray(rawSkills)) {
+      skillsList = rawSkills.map((s: any) => {
+        if (typeof s === 'string') return s.trim();
+        if (s && typeof s === 'object') return (s.name || s.title || s.description || '').trim();
+        return '';
+      }).filter(Boolean);
+    } else if (typeof rawSkills === 'string' && rawSkills.trim().length > 0) {
+      skillsList = rawSkills.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
     
     let projectsArray: any[] = [];
     if (Array.isArray(structured?.projects)) {
@@ -267,7 +285,7 @@ async function startServer() {
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
-    if (!(await guardQuota(req.user!.uid, "generate", res))) return;
+    if (!(await guardAndSpendQuota(req.user!.uid, "generate", res))) return;
     try {
       const { messages, selectedTemplate, structuredData } = req.body as z.infer<typeof generateSchema>;
       const conversationText = (messages || []).map((m) => m.role + ": " + m.content).join("\n");
@@ -520,17 +538,17 @@ ${conversationText}`;
     const rawJson = safeParseJSON(response.text ?? "");
         dataJson = rawJson.name ? rawJson : (rawJson.data || rawJson.portfolio || rawJson);
         
-        // Preserve injected image URLs from structured data (LLM sometimes drops/hallucinates them)
-        if (structuredData?.profilePhoto && (!dataJson.hero_image_url || dataJson.hero_image_url === "")) {
+        // Preserve injected image URLs from structured data (LLM sometimes drops/hallucinates them or copies placeholder)
+        if (structuredData?.profilePhoto && (!dataJson.hero_image_url || dataJson.hero_image_url === "" || isPlaceholder(dataJson.hero_image_url))) {
             dataJson.hero_image_url = structuredData.profilePhoto;
         }
         if (structuredData?.projects && Array.isArray(structuredData.projects) && Array.isArray(dataJson.projects)) {
             dataJson.projects.forEach((proj: any, idx: number) => {
-               if (proj && (!proj.image_url || proj.image_url === "")) {
+               if (proj && (!proj.image_url || proj.image_url === "" || isPlaceholder(proj.image_url))) {
                    const srcProj = structuredData.projects.find((p:any) => p.title && p.title.toLowerCase() === (proj.title || "").toLowerCase());
-                   if (srcProj && srcProj.image_url) {
+                   if (srcProj && srcProj.image_url && !isPlaceholder(srcProj.image_url)) {
                        proj.image_url = srcProj.image_url;
-                   } else if (structuredData.projects[idx] && structuredData.projects[idx].image_url) {
+                   } else if (structuredData.projects[idx] && structuredData.projects[idx].image_url && !isPlaceholder(structuredData.projects[idx].image_url)) {
                        proj.image_url = structuredData.projects[idx].image_url;
                    }
                }
@@ -553,13 +571,6 @@ ${conversationText}`;
         dataJson = buildLocalFallbackData(structuredData, selectedTemplate || "folio");
       }
 
-      try {
-        await markSpent(req.user!.uid, "generate");
-      } catch (e: any) {
-        // Log-and-continue: the AI work already succeeded; a quota-recording hiccup
-        // must not turn the successful response into a 500 (fail-open for recording).
-        console.error("Gagal mencatat pemakaian kuota generate:", e);
-      }
       res.status(200).json(dataJson);
     } catch (e: any) {
       if (e.message === "QUOTA_EXHAUSTED") {
@@ -578,7 +589,7 @@ ${conversationText}`;
     if (!ai) {
       return res.status(503).json({ error: "AI belum dikonfigurasi" });
     }
-    if (!(await guardQuota(req.user!.uid, "edit", res))) return;
+    if (!(await guardAndSpendQuota(req.user!.uid, "edit", res))) return;
     console.log("[EDIT PIPELINE] Request received");
     try {
       const { currentData, userMessage, history } = req.body as z.infer<typeof editSchema>;
@@ -671,7 +682,7 @@ Format JSON:
       let finalData = { ...currentData };
       const isObject = (item: any) => (item && typeof item === 'object' && !Array.isArray(item));
       for (const key in parsed.data) {
-          if (key === 'career' || key === 'projects') continue; // Handled below
+          if (key === 'career' || key === 'projects' || key === 'skills') continue; // Handled below
           if (isObject(parsed.data[key]) && isObject(finalData[key])) {
               finalData[key] = { ...finalData[key], ...parsed.data[key] };
           } else {
@@ -698,46 +709,40 @@ Format JSON:
               }
               finalData.projects = mergedProjects;
           } else if (Array.isArray(parsed.data.projects)) {
-              finalData.projects = parsed.data.projects;
+              finalData.projects = parsed.data.projects.filter((p: any) => p && (p.title || p.name || p.description));
           }
       }
 
-      // Smart merge career timeline array
+      // Smart merge career timeline array (supports deletion when AI returns modified/filtered list)
       if (parsed.data.career !== undefined) {
           let incomingCareer = parsed.data.career;
           if (isObject(incomingCareer)) incomingCareer = [incomingCareer];
           
           if (Array.isArray(incomingCareer)) {
-              let mergedCareer = Array.isArray(currentData.career) ? [...currentData.career] : [];
-              for (const inc of incomingCareer) {
-                  if (!inc || (!inc.role && !inc.company)) continue;
-                  
-                  const exists = mergedCareer.find((c:any) => 
-                      (c.role && c.role === inc.role) || 
-                      (c.company && c.company === inc.company)
-                  );
-                  
-                  if (!exists) {
-                      mergedCareer.push(inc);
-                  } else {
-                      Object.assign(exists, inc);
-                  }
-              }
-              finalData.career = mergedCareer;
+              finalData.career = incomingCareer.filter((c: any) => c && (c.role || c.company || c.description));
           }
       }
 
-      // Preserve image URLs
-      if (currentData.hero_image_url && (!finalData.hero_image_url || finalData.hero_image_url === "")) {
+      // Smart merge skills array
+      if (parsed.data.skills !== undefined) {
+          let incomingSkills = parsed.data.skills;
+          if (isObject(incomingSkills)) incomingSkills = [incomingSkills];
+          if (Array.isArray(incomingSkills)) {
+              finalData.skills = incomingSkills.filter((s: any) => s && s.title);
+          }
+      }
+
+      // Preserve image URLs (restore from currentData if placeholder was returned or image was omitted)
+      if (currentData.hero_image_url && (!finalData.hero_image_url || finalData.hero_image_url === "" || isPlaceholder(finalData.hero_image_url))) {
           finalData.hero_image_url = currentData.hero_image_url;
       }
       if (Array.isArray(currentData.projects) && Array.isArray(finalData.projects)) {
           finalData.projects.forEach((proj: any, idx: number) => {
-              if (proj && (!proj.image_url || proj.image_url === "")) {
+              if (proj && (!proj.image_url || proj.image_url === "" || isPlaceholder(proj.image_url))) {
                   const srcProj = currentData.projects.find((p:any) => p.title && p.title.toLowerCase() === (proj.title || "").toLowerCase());
-                  if (srcProj && srcProj.image_url) {
+                  if (srcProj && srcProj.image_url && !isPlaceholder(srcProj.image_url)) {
                       proj.image_url = srcProj.image_url;
-                  } else if (currentData.projects[idx] && currentData.projects[idx].image_url) {
+                  } else if (currentData.projects[idx] && currentData.projects[idx].image_url && !isPlaceholder(currentData.projects[idx].image_url)) {
                       proj.image_url = currentData.projects[idx].image_url;
                   }
               }
@@ -752,15 +757,15 @@ Format JSON:
       }
       
       console.log("[EDIT PIPELINE] Parsed successfully");
-      try {
-        await markSpent(req.user!.uid, "edit");
-      } catch (e: any) {
-        // Log-and-continue: the AI work already succeeded; a quota-recording hiccup
-        // must not turn the successful response into a 500 (fail-open for recording).
-        console.error("Gagal mencatat pemakaian kuota edit:", e);
-      }
       res.json(parsed);
     } catch (e: any) {
+      // Refund quota since edit operation failed completely
+      try {
+        await refundQuota(req.user!.uid, "edit");
+      } catch (refundErr) {
+        console.error("Gagal melakukan refund kuota edit:", refundErr);
+      }
+
       if (e.message === "QUOTA_EXHAUSTED") {
          console.warn("Gemini Edit Quota Exhausted.");
          return res.status(429).json({ error: "AI Edit sementara tidak tersedia karena batas penggunaan Gemini telah tercapai." });
@@ -803,12 +808,32 @@ Format JSON:
       const baseSlug = slug || slugify(clean.name || "portfolio");
       const col = getFirestore().collection("publicPortfolios");
       let finalSlug = baseSlug;
-      for (let i = 1; i <= 5; i++) {
+      let attempts = 0;
+      
+      while (attempts < 10) {
         const snap = await col.doc(finalSlug).get();
         if (!snap.exists) break;
-        finalSlug = `${baseSlug}-${i}`;
+        const existingData = snap.data();
+        // Allow update if the current authenticated user is the owner
+        if (existingData?.ownerId && existingData.ownerId === req.user!.uid) {
+          break;
+        }
+        attempts++;
+        finalSlug = `${baseSlug}-${attempts}`;
       }
-      await col.doc(finalSlug).set({ html, name: clean.name || "", updatedAt: new Date().toISOString() });
+
+      // If still colliding with another user's slug after 10 attempts, append a unique random suffix
+      const snap = await col.doc(finalSlug).get();
+      if (snap.exists && snap.data()?.ownerId !== req.user!.uid) {
+        finalSlug = `${baseSlug}-${randomUUID().slice(0, 6)}`;
+      }
+
+      await col.doc(finalSlug).set({
+        html,
+        name: clean.name || "",
+        ownerId: req.user!.uid,
+        updatedAt: new Date().toISOString()
+      });
       res.json({ url: `/p/${finalSlug}` });
     } catch (e) {
       console.error("[Publish]", e);

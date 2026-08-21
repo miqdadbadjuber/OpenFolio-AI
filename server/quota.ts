@@ -40,6 +40,31 @@ export async function canSpend(uid: string, type: QuotaType): Promise<boolean> {
   return evaluateUsage(await getUsage(uid), type).allowed;
 }
 
+export async function reserveQuota(uid: string, type: QuotaType): Promise<boolean> {
+  const ref = getFirestore().doc(`usage/${uid}`);
+  return await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.exists ? (snap.data() as UsageDoc) : defaultDoc();
+    const { allowed, next } = evaluateUsage(current, type);
+    if (!allowed) return false;
+    tx.set(ref, next);
+    return true;
+  });
+}
+
+export async function refundQuota(uid: string, type: QuotaType): Promise<void> {
+  const ref = getFirestore().doc(`usage/${uid}`);
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return;
+    const current = resetIfNeeded(snap.data() as UsageDoc);
+    const field = FIELD_MAP[type];
+    if (current[field] > 0) {
+      tx.set(ref, { ...current, [field]: current[field] - 1 });
+    }
+  });
+}
+
 export async function markSpent(uid: string, type: QuotaType): Promise<void> {
   const ref = getFirestore().doc(`usage/${uid}`);
   await getFirestore().runTransaction(async (tx) => {

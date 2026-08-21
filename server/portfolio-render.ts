@@ -82,6 +82,15 @@ export function slugify(input: string): string {
   return base || "portfolio";
 }
 
+// Strict Hex Color Validator (blocks CSS breakout like "#000; } body { display:none }")
+const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const sanitizeHexColor = (val: any, fallback: string = "#6366F1") => {
+  if (typeof val === "string" && HEX_COLOR_REGEX.test(val.trim())) {
+    return val.trim();
+  }
+  return fallback;
+};
+
 // URL validation: only http/https allowed (blocks data:, javascript:, mailto: directly in hrefs).
 // Rejects characters that could break out of an HTML attribute (`"`, `'`, `<`, `>`, backtick,
 // whitespace) because new URL() percent-encodes them internally but does NOT throw — the raw string
@@ -128,8 +137,8 @@ export const sanitizePortfolioData = (raw: any) => {
     // Fix: Ensure hero_image_url is preserved from profilePhoto if LLM misses it
     // Sanitized to http/https only (invalid values -> null) since it feeds an <img src="">.
     hero_image_url: sanitizeImageUrl(d.hero_image_url || d.profilePhoto),
-    color_accent: (typeof d.color_accent === 'string' && d.color_accent.startsWith('#')) ? escapeHTML(d.color_accent) : "#6366F1",
-    color_accent_hover: (typeof d.color_accent_hover === 'string' && d.color_accent_hover.startsWith('#')) ? escapeHTML(d.color_accent_hover) : null,
+    color_accent: sanitizeHexColor(d.color_accent, "#6366F1"),
+    color_accent_hover: d.color_accent_hover ? sanitizeHexColor(d.color_accent_hover, "#4F46E5") : null,
     footer_year: escapeHTML(d.footer_year || new Date().getFullYear().toString()),
     templateName: escapeHTML(d.templateName || "obsidian"),
     safe_mode: d.safe_mode === true
@@ -194,7 +203,7 @@ export const sanitizePortfolioData = (raw: any) => {
   clean.projects = Array.isArray(d.projects) ? d.projects.filter((p: any) => p && (p.title || p.name)).map((p: any) => ({
     title: escapeHTML(p.title || p.name),
     description: escapeHTML(p.description || ""),
-    image_url: sanitizeUrl(p.image_url),
+    image_url: sanitizeImageUrl(p.image_url),
     link: sanitizeUrl(p.link),
     tags: Array.isArray(p.tags) ? p.tags.filter((t: any) => typeof t === 'string').map(escapeHTML) : [],
     visual_priority: escapeHTML(p.visual_priority || 'medium'),

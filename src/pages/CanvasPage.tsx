@@ -515,10 +515,7 @@ export default function CanvasPage() {
         const loadPortfolio = async (u: User | null) => {
             if (!id) return;
 
-            // All sessions are anonymous (Firebase Anonymous Auth gives every guest a uid),
-            // so save AND load both use Firestore when a session exists; localStorage is only
-            // a fallback when there is no user at all. Legacy `guest_` ids simply don't exist
-            // in Firestore and are ignored consistently.
+            let loaded = false;
             if (u && db) {
                 try {
                     const docRef = doc(db, 'portfolios', id);
@@ -548,38 +545,46 @@ export default function CanvasPage() {
                             }];
                         }
                         setWorkspaceMessages(msgs);
+                        loaded = true;
                     }
                 } catch (e) {
-                    console.error("Kesalahan memuat portofolio:", e);
+                    console.error("Kesalahan memuat portofolio dari Firestore:", e);
                 }
-            } else {
+            }
+
+            // Fallback to localStorage if not in Firestore (e.g. guest mode history, offline drafts)
+            if (!loaded) {
                 const stored = localStorage.getItem('openfolio_guest_history');
                 if (stored) {
-                    const list = JSON.parse(stored);
-                    const orig = list.find((item: any) => item.id === id);
-                    if (orig) {
-                        setPortfolioData(orig.content);
-                        
-                        let html = orig.htmlContent || orig.html || '';
-                        if (!html && orig.content) {
-                            try {
-                                html = await callInjectAPI(orig.content);
-                            } catch (e) {
-                                console.error("[OpenFolio] Gagal merender ulang portfolio:", e);
-                                html = '';
+                    try {
+                        const list = JSON.parse(stored);
+                        const orig = list.find((item: any) => item.id === id);
+                        if (orig) {
+                            setPortfolioData(orig.content);
+                            
+                            let html = orig.htmlContent || orig.html || '';
+                            if (!html && orig.content) {
+                                try {
+                                    html = await callInjectAPI(orig.content);
+                                } catch (e) {
+                                    console.error("[OpenFolio] Gagal merender ulang portfolio:", e);
+                                    html = '';
+                                }
                             }
+                            setHtmlContent(html);
+                            setGuidedStage('done');
+                            
+                            let msgs = orig.messages;
+                            if (!msgs || msgs.length === 0) {
+                                msgs = [{
+                                    role: 'assistant',
+                                    content: `Selamat datang kembali di workspace tamu, **${orig.content?.name || 'Kreatif'}**! ✨ Silakan minta perubahan desain portofolio Anda di sini.`
+                                }];
+                            }
+                            setWorkspaceMessages(msgs);
                         }
-                        setHtmlContent(html);
-                        setGuidedStage('done');
-                        
-                        let msgs = orig.messages;
-                        if (!msgs || msgs.length === 0) {
-                            msgs = [{
-                                role: 'assistant',
-                                content: `Selamat datang kembali di workspace tamu, **${orig.content?.name || 'Kreatif'}**! ✨ Silakan minta perubahan desain portofolio Anda di sini.`
-                            }];
-                        }
-                        setWorkspaceMessages(msgs);
+                    } catch (err) {
+                        console.error("Kesalahan memuat portofolio dari localStorage:", err);
                     }
                 }
             }
@@ -1972,7 +1977,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                             </div>
                                                             <div className="space-y-2.5 pt-2 w-full max-w-md mx-auto md:mx-0">
                                                                 {[100, 85, 60].map((width, i) => (
-                                                                    <div key={i} className={`h-2.5 md:h-3 w-[${width}%] max-w-[${width}%] bg-zinc-800/80 rounded-sm relative overflow-hidden`}>
+                                                                    <div key={i} style={{ width: `${width}%`, maxWidth: `${width}%` }} className="h-2.5 md:h-3 bg-zinc-800/80 rounded-sm relative overflow-hidden">
                                                                         <motion.div className="absolute inset-0 w-[200%] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" animate={{ x: ['-100%', '100%'] }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear", delay: 0.4 + (i * 0.1) }} />
                                                                     </div>
                                                                 ))}
@@ -2013,6 +2018,7 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                          const blob = new Blob([htmlContent], { type: 'text/html' });
                                          const url = URL.createObjectURL(blob);
                                          window.open(url, '_blank');
+                                         setTimeout(() => URL.revokeObjectURL(url), 10000);
                                        }}
                                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/10 text-white rounded-xl text-xs font-bold tracking-wide transition-all shadow-md flex items-center gap-2 cursor-pointer active:scale-95"
                                      >
@@ -2187,11 +2193,13 @@ Sekarang, asisten AI siap melayani instruksi Anda! Silakan ketik perintah peruba
                                                   onClick={() => {
                                                       const element = document.createElement("a");
                                                       const file = new Blob([htmlContent], {type: 'text/html'});
-                                                      element.href = URL.createObjectURL(file);
+                                                      const url = URL.createObjectURL(file);
+                                                      element.href = url;
                                                       element.download = `openfolio_${onboardingName?.toLowerCase().replace(/\s+/g, '_') || 'portfolio'}.html`;
                                                       document.body.appendChild(element);
                                                       element.click();
                                                       document.body.removeChild(element);
+                                                      setTimeout(() => URL.revokeObjectURL(url), 5000);
                                                   }}
                                                   className="px-4 py-1.5 bg-zinc-100 hover:bg-white text-zinc-950 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer"
                                               >

@@ -13,15 +13,13 @@ Cloudinary for image uploads.
 
 ## Features
 
-- **AI onboarding chat**: Gemini asks you one question at a time and collects your identity data.
-- **Portfolio generation**: structured, truth-preserving rendering into one of 8 templates
-  (`obsidian`, `kinetic`, `aurora`, `folio`, `studio`, `nexus`, `pulse`, `manuscript`).
-- **JSON editor with AI revisions**: ask for changes in plain language; the edit pipeline
-  merges the result back into your portfolio data.
-- **Live preview**: rendered in a sandboxed iframe.
-- **Publish**: get a public URL (`/p/{slug}`) hosted from Firestore.
-- **Uploads**: images (JPG/PNG/WebP, ≤ 2 MB) via Cloudinary and PDF parsing for résumés.
-- **Daily quota**: 5 generates and 7 edits per user per day.
+- **Guided Studio Workspace**: Step-by-step section builder (Navbar, Hero, About, Skills, Projects, Career, Contact).
+- **AI Layout Intelligence**: Structured, truth-preserving rendering with dynamic visual behavior, typography balance, and theme styling.
+- **Interactive AI Chat Revisions**: Ask for changes in plain natural language; the AI edit pipeline merges revisions cleanly into your live portfolio data.
+- **Realtime Cockpit Preview**: Live responsive preview rendered in a sandboxed iframe.
+- **Publish & Share**: Get a fast public URL (`/p/{slug}`) hosted directly from Firestore.
+- **Uploads & Exports**: Profile image uploads via Cloudinary and clean standalone HTML/Tailwind CSS download.
+- **Daily Quota**: 5 generates and 7 edits per user per day.
 
 ## Architecture
 
@@ -197,8 +195,7 @@ Rate limits: `/api/gemini/*` 15 req/min, `/api/upload` + `/api/pdf/parse` 10 req
 
 ## Author
 
-**Miqdad Badjuber**
-- GitHub: [@MiqdadBadjuber](https://github.com/MiqdadBadjuber)
+@miqdadbadjuber
 
 ## License
 

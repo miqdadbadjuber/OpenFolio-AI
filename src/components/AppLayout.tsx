@@ -374,15 +374,15 @@ export default function AppLayout({
                   <div>
                     <div className="text-[9px] text-zinc-500 uppercase tracking-widest">Progres Workspace</div>
                     <div className="text-xs font-mono font-bold text-zinc-300 mt-1 uppercase tracking-wider text-[10px]">
-                      {guidedStage === 'identity_name' && 'Phase 1: Inisialisasi Nama'}
-                      {guidedStage === 'identity_profession' && 'Phase 2: Analisis Bidang'}
-                      {guidedStage === 'greeting' && 'Phase 2: Sambutan Pembuka'}
-                      {guidedStage === 'templates' && 'Phase 3: Penyelarasan Template'}
-                      {guidedStage === 'interview' && 'Phase 4: Sesi Wawancara'}
-                      {guidedStage === 'enhancements_photo' && 'Phase 5: Portret Estetika'}
-                      {guidedStage === 'enhancements_links' && 'Phase 6: Jaringan Digital'}
-                      {guidedStage === 'summary' && 'Penyusunan Blueprint'}
-                      {guidedStage === 'generating' && 'Penyelarasan Kode...'}
+                      {guidedStage === 'navbar' && 'Tahap 1: Navigasi'}
+                      {guidedStage === 'hero' && 'Tahap 2: Hero & Identitas'}
+                      {guidedStage === 'about' && 'Tahap 3: Tentang Diri'}
+                      {guidedStage === 'skills' && 'Tahap 4: Keahlian'}
+                      {guidedStage === 'projects' && 'Tahap 5: Portofolio Proyek'}
+                      {guidedStage === 'career' && 'Tahap 6: Riwayat Karier'}
+                      {guidedStage === 'contact' && 'Tahap 7: Kontak & Sosial'}
+                      {guidedStage === 'generating' && 'Penyusunan Kode AI...'}
+                      {guidedStage === 'done' && 'Selesai & Siap Live'}
                     </div>
                     
                     {/* Progress step bar */}
@@ -391,13 +391,13 @@ export default function AppLayout({
                         className="h-full bg-indigo-500 transition-all duration-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" 
                         style={{ 
                           width: 
-                            guidedStage === 'identity_name' ? '15%' :
-                            guidedStage === 'identity_profession' ? '30%' :
-                            guidedStage === 'greeting' ? '40%' :
-                            guidedStage === 'templates' ? '55%' :
-                            guidedStage === 'interview' ? '70%' :
-                            guidedStage === 'enhancements_photo' ? '85%' :
-                            guidedStage === 'enhancements_links' ? '95%' : '100%'
+                            guidedStage === 'navbar' ? '15%' :
+                            guidedStage === 'hero' ? '30%' :
+                            guidedStage === 'about' ? '45%' :
+                            guidedStage === 'skills' ? '60%' :
+                            guidedStage === 'projects' ? '75%' :
+                            guidedStage === 'career' ? '85%' :
+                            guidedStage === 'contact' ? '95%' : '100%'
                         }} 
                       />
                     </div>

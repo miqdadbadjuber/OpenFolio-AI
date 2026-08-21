@@ -26,8 +26,9 @@ export default function SettingsPage() {
   useEffect(() => {
     const updateTimer = () => {
       const now = new Date();
-      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      const diff = tomorrow.getTime() - now.getTime();
+      // Server resets quota at 00:00:00 UTC
+      const tomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+      const diff = Math.max(0, tomorrowUTC.getTime() - now.getTime());
       const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       setResetTimer(`${h} jam ${m} menit`);
@@ -48,18 +49,31 @@ export default function SettingsPage() {
   }, []);
 
   const handleDeleteAllPortfolios = async () => {
-    if (!auth?.currentUser || !db) return;
-    
     if (confirm('Apakah benar kamu ingin menghapus semua portofolio kamu? Tindakan ini tidak dapat dibatalkan.')) {
       try {
-        const q = query(collection(db, 'portfolios'), where('userId', '==', auth.currentUser.uid));
-        const snapshot = await getDocs(q);
-        const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
-        await Promise.all(deletePromises);
+        if (auth?.currentUser && db) {
+          const q = query(collection(db, 'portfolios'), where('userId', '==', auth.currentUser.uid));
+          const snapshot = await getDocs(q);
+          const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
+          await Promise.all(deletePromises);
+        }
+        // Also clear guest & local draft data from localStorage
+        localStorage.removeItem('openfolio_guest_history');
+        if (auth?.currentUser) {
+          const uid = auth.currentUser.uid;
+          localStorage.removeItem(`user_${uid}_openfolio_draft`);
+          localStorage.removeItem(`user_${uid}_openfolio_draft_stage`);
+          localStorage.removeItem(`user_${uid}_openfolio_draft_history`);
+        }
+        localStorage.removeItem('guest_openfolio_draft');
+        localStorage.removeItem('guest_openfolio_draft_stage');
+        localStorage.removeItem('guest_openfolio_draft_history');
+        window.dispatchEvent(new Event('openfolio_history_change'));
+        
         alert('Semua portofolio berhasil dihapus.');
         setDeletePortfolioConfirm('');
       } catch (err: any) {
-        if (err.code !== 'permission-denied' && !err.message.includes('permission')) {
+        if (err.code !== 'permission-denied' && !err.message?.includes('permission')) {
           console.error(err);
         }
         alert('Gagal menghapus portofolio.');
